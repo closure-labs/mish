@@ -1,0 +1,19 @@
+{
+  "createdAt": "2026-06-22T00:00:00Z",
+  "id": "wp-public-example",
+  "label": "Public field checkpoint",
+  "position": {
+    "lat": 44.0521,
+    "lon": -123.0868
+  },
+  "provenance": {
+    "adapter": "radio.simulator",
+    "format": "meshtastic-position",
+    "payload": {
+      "channel": "simulated"
+    },
+    "receivedAt": "2026-06-22T00:00:00Z"
+  },
+  "source": "meshtastic-simulated",
+  "visibility": "public"
+}

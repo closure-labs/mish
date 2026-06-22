@@ -1,0 +1,16 @@
+{
+  "contentHash": "sha256:1111111111111111111111111111111111111111111111111111111111111111",
+  "createdAt": "2026-06-22T00:00:00Z",
+  "id": "public-field-pack",
+  "name": "Public Field Pack",
+  "publication": {
+    "eventId": null,
+    "publishedAt": null,
+    "relays": [],
+    "visibility": "public"
+  },
+  "signature": "hmac-sha256:2222222222222222222222222222222222222222222222222222222222222222",
+  "signer": "vf:example",
+  "version": "0.1",
+  "waypointIds": ["wp-public-example"]
+}

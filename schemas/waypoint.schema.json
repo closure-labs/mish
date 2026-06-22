@@ -1,0 +1,68 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://vestaforge.local/schemas/waypoint.schema.json",
+  "title": "VestaForge Waypoint",
+  "type": "object",
+  "required": ["id", "createdAt", "source", "visibility", "position", "provenance"],
+  "additionalProperties": false,
+  "properties": {
+    "id": {
+      "type": "string",
+      "pattern": "^[A-Za-z0-9._:-]+$"
+    },
+    "createdAt": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "source": {
+      "type": "string"
+    },
+    "visibility": {
+      "type": "string",
+      "enum": ["public", "friends", "private"]
+    },
+    "position": {
+      "type": "object",
+      "required": ["lat", "lon"],
+      "additionalProperties": false,
+      "properties": {
+        "lat": {
+          "type": "number",
+          "minimum": -90,
+          "maximum": 90
+        },
+        "lon": {
+          "type": "number",
+          "minimum": -180,
+          "maximum": 180
+        }
+      }
+    },
+    "label": {
+      "type": "string"
+    },
+    "body": {
+      "type": "string"
+    },
+    "provenance": {
+      "type": "object",
+      "required": ["adapter", "format", "receivedAt", "payload"],
+      "additionalProperties": true,
+      "properties": {
+        "adapter": {
+          "type": "string"
+        },
+        "format": {
+          "type": "string"
+        },
+        "receivedAt": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "payload": {
+          "type": "object"
+        }
+      }
+    }
+  }
+}

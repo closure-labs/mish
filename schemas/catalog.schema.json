@@ -1,0 +1,34 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://vestaforge.local/schemas/catalog.schema.json",
+  "title": "VestaForge Local Catalog",
+  "type": "object",
+  "required": ["version", "signedAt", "signer", "profiles", "capabilities", "policies", "signature"],
+  "additionalProperties": false,
+  "properties": {
+    "version": {
+      "const": "0.1"
+    },
+    "signedAt": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "signer": {
+      "type": "string"
+    },
+    "profiles": {
+      "type": "object",
+      "required": ["mini-pc", "sbc-rpi4", "home-server"]
+    },
+    "capabilities": {
+      "type": "object",
+      "required": ["matrix", "openziti", "geopack", "radio"]
+    },
+    "policies": {
+      "type": "object"
+    },
+    "signature": {
+      "type": "string"
+    }
+  }
+}

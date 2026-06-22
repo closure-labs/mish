@@ -1,0 +1,48 @@
+{
+  "capabilities": {
+    "geopack": {
+      "providers": ["local-json"],
+      "schema": "schemas/geopack-manifest.schema.json"
+    },
+    "matrix": {
+      "providers": ["tuwunel", "conduit"],
+      "quirk": "den.quirks.meshServices.matrix"
+    },
+    "openziti": {
+      "providers": ["controller", "edge-router"],
+      "quirk": "den.quirks.meshServices.openziti"
+    },
+    "radio": {
+      "providers": ["meshtastic-simulated"],
+      "hardwareProvidersEnabled": false
+    }
+  },
+  "policies": {
+    "matrix": {
+      "denyDualBackend": true,
+      "migrationSupportedInAlpha": false
+    },
+    "publication": {
+      "nostrPublicOnly": true,
+      "requirePublicWaypoints": true
+    }
+  },
+  "profiles": {
+    "home-server": {
+      "defaultMatrixProvider": "tuwunel",
+      "releaseGated": false
+    },
+    "mini-pc": {
+      "defaultMatrixProvider": "tuwunel",
+      "releaseGated": true
+    },
+    "sbc-rpi4": {
+      "defaultMatrixProvider": "conduit",
+      "releaseGated": false
+    }
+  },
+  "signature": "hmac-sha256:catalog-alpha-placeholder",
+  "signedAt": "2026-06-22T00:00:00Z",
+  "signer": "vf:catalog-alpha",
+  "version": "0.1"
+}

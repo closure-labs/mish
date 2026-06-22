@@ -1,0 +1,77 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://vestaforge.local/schemas/geopack-manifest.schema.json",
+  "title": "VestaForge GeoPack Manifest",
+  "type": "object",
+  "required": [
+    "version",
+    "id",
+    "name",
+    "createdAt",
+    "waypointIds",
+    "contentHash",
+    "signer",
+    "publication",
+    "signature"
+  ],
+  "additionalProperties": false,
+  "properties": {
+    "version": {
+      "const": "0.1"
+    },
+    "id": {
+      "type": "string",
+      "pattern": "^[A-Za-z0-9._:-]+$"
+    },
+    "name": {
+      "type": "string"
+    },
+    "createdAt": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "waypointIds": {
+      "type": "array",
+      "minItems": 1,
+      "uniqueItems": true,
+      "items": {
+        "type": "string"
+      }
+    },
+    "contentHash": {
+      "type": "string",
+      "pattern": "^sha256:[0-9a-f]{64}$"
+    },
+    "signer": {
+      "type": "string"
+    },
+    "publication": {
+      "type": "object",
+      "required": ["visibility", "publishedAt", "relays", "eventId"],
+      "additionalProperties": false,
+      "properties": {
+        "visibility": {
+          "type": "string",
+          "enum": ["public", "friends", "private"]
+        },
+        "publishedAt": {
+          "type": ["string", "null"],
+          "format": "date-time"
+        },
+        "relays": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "eventId": {
+          "type": ["string", "null"]
+        }
+      }
+    },
+    "signature": {
+      "type": "string",
+      "pattern": "^hmac-sha256:[0-9a-f]{64}$"
+    }
+  }
+}
