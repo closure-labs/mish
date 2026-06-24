@@ -45,7 +45,15 @@ def validate_geopack_manifest(value: dict[str, Any]) -> None:
 def validate_catalog(value: dict[str, Any]) -> None:
     for field in ("version", "signedAt", "signer", "profiles", "capabilities", "policies", "signature"):
         require(field in value, f"catalog missing {field}")
-    require("mini-pc" in value["profiles"], "catalog must include mini-pc profile")
+    profiles = value["profiles"]
+    for profile in ("mini-pc", "sbc-rpi4", "home-server"):
+        require(profile in profiles, f"catalog must include {profile} profile")
+        require(isinstance(profiles[profile], dict), f"catalog {profile} profile must be an object")
+    require(profiles["mini-pc"].get("defaultMatrixProvider") == "tuwunel", "mini-pc must default to Tuwunel")
+    require(profiles["sbc-rpi4"].get("defaultMatrixProvider") == "conduit", "sbc-rpi4 must default to Conduit")
+    require(profiles["mini-pc"].get("releaseGated") is True, "mini-pc must be release-gated")
+    require(profiles["sbc-rpi4"].get("releaseGated") is True, "sbc-rpi4 must be release-gated")
+    require(profiles["home-server"].get("releaseGated") is False, "home-server must not be alpha release-gated")
     matrix_policy = value["policies"].get("matrix")
     require(isinstance(matrix_policy, dict), "catalog must include matrix policy")
     require(matrix_policy.get("denyDualBackend") is True, "catalog must deny Matrix dual backend")

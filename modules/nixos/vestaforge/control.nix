@@ -7,6 +7,9 @@
 
 let
   cfg = config.services.vestaforge;
+  releaseGatedMatrix =
+    (cfg.profile == "mini-pc" && cfg.matrix.provider == "tuwunel")
+    || (cfg.profile == "sbc-rpi4" && cfg.matrix.provider == "conduit");
   configJson = {
     version = "0.1.0-alpha";
     profile = cfg.profile;
@@ -21,7 +24,7 @@ let
       domain = cfg.matrix.domain;
       port = cfg.matrix.port;
       homeserverUrl = "http://127.0.0.1:${toString cfg.matrix.port}";
-      releaseGated = cfg.profile == "mini-pc" && cfg.matrix.provider == "tuwunel";
+      releaseGated = releaseGatedMatrix;
       providers = {
         tuwunel = {
           enable = cfg.matrix.providers.tuwunel.enable;
@@ -58,6 +61,13 @@ let
 in
 {
   config = lib.mkIf cfg.enable {
+    den.quirks.meshServices.control = {
+      localUrl = "http://${cfg.api.bindHost}:${toString cfg.api.port}";
+      matrixReleaseGated = releaseGatedMatrix;
+      configPath = "/etc/vestaforge/config.json";
+      catalogPath = "/etc/vestaforge/catalog.json";
+    };
+
     environment.etc."vestaforge/config.json".source = renderedConfig;
     environment.etc."vestaforge/catalog.json".source = ../../../catalog/vestaforge-catalog.json;
 

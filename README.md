@@ -1,22 +1,29 @@
 # VestaForge
 
-VestaForge 0.1 alpha is a NixOS appliance prototype for the Mini-PC target.
+VestaForge 0.1 alpha is a NixOS appliance prototype for Mini-PC and
+Raspberry Pi 4-class SBC targets.
 It demonstrates profile-driven NixOS composition, Den-compatible quirk data,
 Matrix provider selection, OpenZiti-protected local service surfaces, simulated
 Meshtastic-like waypoint ingest, signed GeoPack manifests, and mock/file Nostr
 publication.
 
-The 0.1 release-gated target is `x86_64-linux` with the `mini-pc` profile.
-`sbc-rpi4` and `home-server` are represented in the catalog and option model,
-but are not release-gated by this alpha.
+The 0.1 release-gated targets are `x86_64-linux` with the `mini-pc` profile and
+`aarch64-linux` with the `sbc-rpi4` profile. `home-server` is represented in the
+catalog and option model, but is not release-gated by this alpha.
 
 ## Flake Outputs
 
 - `nixosConfigurations.vestaforge-mini-pc`
-- `packages.x86_64-linux.vestaforge-control`
-- `packages.x86_64-linux.vestaforge-image`
+- `nixosConfigurations.vestaforge-rpi4`
+- `packages.x86_64-linux.{vestaforge-control,vestaforge-image,vestaforge-mini-pc-image}`
+- `packages.aarch64-linux.{vestaforge-control,vestaforge-image,vestaforge-rpi4-image}`
+- `packages.aarch64-darwin.vestaforge-control`
 - `checks.x86_64-linux.{module-eval,matrix-dual-provider-policy,schema,cli,service-config,vm-smoke,vm}`
+- `checks.aarch64-linux.{module-eval,matrix-dual-provider-policy,schema,cli,service-config}`
+- `checks.aarch64-darwin.{schema,cli}`
 - `devShells.x86_64-linux.default`
+- `devShells.aarch64-linux.default`
+- `devShells.aarch64-darwin.default`
 
 ## Local CLI
 
@@ -65,8 +72,36 @@ through the OpenZiti service model:
 nix flake check
 ```
 
-For faster evaluation-only feedback:
+From non-Linux development hosts, include every declared Linux target explicitly:
 
 ```bash
-nix flake check --no-build
+nix flake check --no-build --all-systems
 ```
+
+Build entrypoints:
+
+```bash
+nix build .#packages.x86_64-linux.vestaforge-mini-pc-image
+nix build .#packages.aarch64-linux.vestaforge-rpi4-image
+```
+
+On an AArch64 Darwin development host, use the build status helper to run the
+host-native checks and Linux image dry-runs:
+
+```bash
+scripts/alpha-build-status.sh
+```
+
+After configuring a Linux builder, require the actual Mini-PC and RPi4 Linux
+builds:
+
+```bash
+scripts/alpha-build-status.sh --full
+```
+
+If Nix reports `builders = @/etc/nix/machines` but `/etc/nix/machines` is
+missing, no Linux builder is currently available to realize those Linux outputs
+from Darwin.
+
+See `docs/building-alpha.md` for local readiness levels and Darwin Linux builder
+notes.

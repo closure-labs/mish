@@ -38,7 +38,7 @@
     },
     "sbc-rpi4": {
       "defaultMatrixProvider": "conduit",
-      "releaseGated": false
+      "releaseGated": true
     }
   },
   "signature": "hmac-sha256:catalog-alpha-placeholder",

@@ -2,6 +2,11 @@
 
 let
   cfg = config.services.vestaforge;
+  alphaReleaseProfiles = [
+    "mini-pc"
+    "sbc-rpi4"
+  ];
+  isAlphaReleaseProfile = lib.elem cfg.profile alphaReleaseProfiles;
 in
 {
   options.den = {
@@ -21,7 +26,7 @@ in
   config = lib.mkIf cfg.enable {
     den.aspects.profile = {
       name = cfg.profile;
-      releaseGated = cfg.profile == "mini-pc";
+      releaseGated = isAlphaReleaseProfile;
       profiles = [
         "mini-pc"
         "sbc-rpi4"
@@ -31,8 +36,8 @@ in
 
     den.quirks.meshServices.profile = {
       name = cfg.profile;
-      releaseGated = cfg.profile == "mini-pc";
-      primaryAcceptanceTarget = cfg.profile == "mini-pc";
+      releaseGated = isAlphaReleaseProfile;
+      primaryAcceptanceTarget = isAlphaReleaseProfile;
     };
   };
 }

@@ -42,6 +42,6 @@ stdenvNoCC.mkDerivation {
     homepage = "https://example.invalid/vestaforge";
     license = lib.licenses.asl20;
     mainProgram = "vfctl";
-    platforms = lib.platforms.linux;
+    platforms = lib.platforms.unix;
   };
 }

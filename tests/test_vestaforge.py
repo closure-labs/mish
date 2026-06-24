@@ -1,10 +1,13 @@
 from __future__ import annotations
 
 import os
+import json
 import tempfile
 import unittest
+from pathlib import Path
 
 from vestaforge.storage import VestaForgeStore, default_config
+from vestaforge.validation import validate_catalog
 
 
 class StoreTests(unittest.TestCase):
@@ -112,6 +115,19 @@ class StoreTests(unittest.TestCase):
         self.assertFalse(created_again)
         self.assertEqual(first, second)
         self.assertTrue(second["mfaRequired"])
+
+    def test_catalog_release_gates_mini_pc_and_rpi4_alpha_profiles(self) -> None:
+        catalog_path = Path(
+            os.environ.get(
+                "VESTAFORGE_CATALOG_PATH",
+                str(Path(__file__).resolve().parents[1] / "catalog" / "vestaforge-catalog.json"),
+            )
+        )
+        catalog = json.loads(catalog_path.read_text(encoding="utf-8"))
+        validate_catalog(catalog)
+        self.assertTrue(catalog["profiles"]["mini-pc"]["releaseGated"])
+        self.assertTrue(catalog["profiles"]["sbc-rpi4"]["releaseGated"])
+        self.assertFalse(catalog["profiles"]["home-server"]["releaseGated"])
 
 
 if __name__ == "__main__":
