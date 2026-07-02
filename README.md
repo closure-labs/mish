@@ -25,6 +25,32 @@ catalog and option model, but is not release-gated by this alpha.
 - `devShells.aarch64-linux.default`
 - `devShells.aarch64-darwin.default`
 
+## Flake Structure Plan
+
+The flake follows the nearby Den repository's dendritic direction: keep
+`flake.nix` as a thin entrypoint and move output construction into the `nix/`
+tree.
+
+Current state:
+
+- `flake.nix` delegates to `nix/default.nix`
+- `nix/default.nix` owns packages, apps, checks, dev shells, overlays, and NixOS
+  configurations
+
+Next structural steps:
+
+1. Split `nix/default.nix` into focused files such as `nix/packages.nix`,
+   `nix/apps.nix`, `nix/checks.nix`, `nix/dev-shells.nix`, and
+   `nix/nixos-configurations.nix`.
+2. Keep those files plain Nix while the output graph is still small enough to
+   understand directly.
+3. Adopt `flake-parts` once per-system outputs, checks, and host definitions
+   become independently owned modules and the merge semantics are worth the
+   additional input.
+4. If VestaForge adopts Den more deeply, prefer Den's `flakeModule` and
+   `import-tree` style so `flake-parts` becomes the composition host instead of
+   a standalone abstraction layer.
+
 ## Local CLI
 
 ```bash
