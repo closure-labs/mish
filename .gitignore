@@ -1,2 +1,28 @@
+# Python
 __pycache__/
 *.py[cod]
+*.egg-info/
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.coverage
+htmlcov/
+build/
+dist/
+
+# Nix/local build outputs
+result
+result-*
+*.qcow2
+*.img
+*.img.zst
+
+# Local environment and editor state
+.direnv/
+.venv/
+.env
+.env.*
+!.env.example
+.DS_Store
+*.swp
+*~
