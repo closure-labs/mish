@@ -4,8 +4,8 @@ VestaForge 0.1 alpha is a NixOS appliance prototype for Mini-PC and
 Raspberry Pi 4-class SBC targets.
 It demonstrates profile-driven NixOS composition, Den-compatible quirk data,
 Matrix provider selection, OpenZiti-protected local service surfaces, simulated
-Meshtastic-like waypoint ingest, signed GeoPack manifests, and mock/file Nostr
-publication.
+Meshtastic-like waypoint ingest, experimental Reticulum/RNode radio provider
+wiring, signed GeoPack manifests, and mock/file Nostr publication.
 
 The 0.1 release-gated targets are `x86_64-linux` with the `mini-pc` profile and
 `aarch64-linux` with the `sbc-rpi4` profile. `home-server` is represented in the
@@ -18,8 +18,8 @@ catalog and option model, but is not release-gated by this alpha.
 - `packages.x86_64-linux.{vestaforge-control,vestaforge-image,vestaforge-mini-pc-image}`
 - `packages.aarch64-linux.{vestaforge-control,vestaforge-image,vestaforge-rpi4-image}`
 - `packages.aarch64-darwin.vestaforge-control`
-- `checks.x86_64-linux.{module-eval,matrix-dual-provider-policy,schema,cli,service-config,vm-smoke,vm}`
-- `checks.aarch64-linux.{module-eval,matrix-dual-provider-policy,schema,cli,service-config}`
+- `checks.x86_64-linux.{module-eval,matrix-dual-provider-policy,reticulum-rnode-provider,schema,cli,service-config,vm-smoke,vm}`
+- `checks.aarch64-linux.{module-eval,matrix-dual-provider-policy,reticulum-rnode-provider,schema,cli,service-config}`
 - `checks.aarch64-darwin.{schema,cli}`
 - `devShells.x86_64-linux.default`
 - `devShells.aarch64-linux.default`
@@ -50,10 +50,20 @@ The appliance module exposes:
 - `services.vestaforge.openziti.enable`
 - `services.vestaforge.geopack.enable`
 - `services.vestaforge.nostr.relays`
+- `services.vestaforge.radio.providers = [ "meshtastic-simulated" ] | [ "reticulum-rnode" ]`
 - `services.vestaforge.radio.simulator.enable`
+- `services.vestaforge.radio.reticulumRnode.enable`
+- `services.vestaforge.radio.reticulumRnode.package`
+- `services.vestaforge.radio.reticulumRnode.port`
 
 Matrix providers are mutually exclusive for one domain. Enabling both Conduit
 and Tuwunel produces a NixOS assertion failure.
+
+`reticulum-rnode` is implemented as an experimental provider. It renders a
+Reticulum `RNodeInterface` configuration and starts `rnsd`, but nixpkgs marks
+the RNS package as unfree in the current pin. Deployments that select this
+provider must explicitly allow the package and set
+`services.vestaforge.radio.reticulumRnode.package = pkgs.rns`.
 
 ## HTTP API
 

@@ -84,7 +84,21 @@ def default_config(state_dir: str | None = None) -> dict[str, Any]:
         },
         "geopack": {"enable": True},
         "nostr": {"relays": []},
-        "radio": {"simulator": {"enable": True}},
+        "radio": {
+            "providers": ["meshtastic-simulated"],
+            "simulator": {"enable": True},
+            "reticulumRnode": {
+                "enable": False,
+                "interface": "VestaForge RNode",
+                "port": "/dev/ttyACM0",
+                "mode": "access_point",
+                "frequency": 915000000,
+                "bandwidth": 125000,
+                "txPower": 7,
+                "spreadingFactor": 8,
+                "codingRate": 5,
+            },
+        },
         "catalog": {"path": ""},
     }
 
@@ -457,7 +471,11 @@ def status_payload(config: dict[str, Any], include_probes: bool = True) -> dict[
         },
         "geopack": {"enabled": bool(config.get("geopack", {}).get("enable", True))},
         "nostr": {"relays": config.get("nostr", {}).get("relays", [])},
-        "radio": {"simulator": config.get("radio", {}).get("simulator", {})},
+        "radio": {
+            "providers": config.get("radio", {}).get("providers", []),
+            "simulator": config.get("radio", {}).get("simulator", {}),
+            "reticulumRnode": config.get("radio", {}).get("reticulumRnode", {}),
+        },
     }
     if include_probes:
         matrix_url = matrix.get("homeserverUrl")

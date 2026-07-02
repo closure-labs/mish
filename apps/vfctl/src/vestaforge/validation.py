@@ -57,3 +57,16 @@ def validate_catalog(value: dict[str, Any]) -> None:
     matrix_policy = value["policies"].get("matrix")
     require(isinstance(matrix_policy, dict), "catalog must include matrix policy")
     require(matrix_policy.get("denyDualBackend") is True, "catalog must deny Matrix dual backend")
+    radio = value["capabilities"].get("radio")
+    require(isinstance(radio, dict), "catalog must include radio capability")
+    providers = radio.get("providers", [])
+    require("meshtastic-simulated" in providers, "catalog radio must include meshtastic-simulated")
+    require("reticulum-rnode" in providers, "catalog radio must include reticulum-rnode")
+    require(
+        "meshtastic-simulated" in radio.get("releaseGatedProviders", []),
+        "catalog radio must release-gate meshtastic-simulated",
+    )
+    require(
+        "reticulum-rnode" in radio.get("experimentalProviders", []),
+        "catalog radio must mark reticulum-rnode experimental",
+    )

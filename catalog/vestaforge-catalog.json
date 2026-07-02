@@ -13,8 +13,10 @@
       "quirk": "den.quirks.meshServices.openziti"
     },
     "radio": {
-      "providers": ["meshtastic-simulated"],
-      "hardwareProvidersEnabled": false
+      "providers": ["meshtastic-simulated", "reticulum-rnode"],
+      "releaseGatedProviders": ["meshtastic-simulated"],
+      "experimentalProviders": ["reticulum-rnode"],
+      "hardwareProvidersEnabled": true
     }
   },
   "policies": {

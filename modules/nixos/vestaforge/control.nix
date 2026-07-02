@@ -49,8 +49,20 @@ let
       relays = cfg.nostr.relays;
     };
     radio = {
+      providers = cfg.radio.providers;
       simulator = {
         enable = cfg.radio.simulator.enable;
+      };
+      reticulumRnode = {
+        enable = cfg.radio.reticulumRnode.enable;
+        interface = cfg.radio.reticulumRnode.interfaceName;
+        port = cfg.radio.reticulumRnode.port;
+        mode = cfg.radio.reticulumRnode.mode;
+        frequency = cfg.radio.reticulumRnode.frequency;
+        bandwidth = cfg.radio.reticulumRnode.bandwidth;
+        txPower = cfg.radio.reticulumRnode.txPower;
+        spreadingFactor = cfg.radio.reticulumRnode.spreadingFactor;
+        codingRate = cfg.radio.reticulumRnode.codingRate;
       };
     };
     catalog = {

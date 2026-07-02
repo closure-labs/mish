@@ -129,6 +129,26 @@ class StoreTests(unittest.TestCase):
         self.assertTrue(catalog["profiles"]["sbc-rpi4"]["releaseGated"])
         self.assertFalse(catalog["profiles"]["home-server"]["releaseGated"])
 
+    def test_catalog_includes_reticulum_rnode_as_experimental_radio_provider(self) -> None:
+        catalog_path = Path(
+            os.environ.get(
+                "VESTAFORGE_CATALOG_PATH",
+                str(Path(__file__).resolve().parents[1] / "catalog" / "vestaforge-catalog.json"),
+            )
+        )
+        catalog = json.loads(catalog_path.read_text(encoding="utf-8"))
+        validate_catalog(catalog)
+        radio = catalog["capabilities"]["radio"]
+        self.assertIn("reticulum-rnode", radio["providers"])
+        self.assertIn("reticulum-rnode", radio["experimentalProviders"])
+        self.assertIn("meshtastic-simulated", radio["releaseGatedProviders"])
+
+    def test_default_config_reports_radio_providers(self) -> None:
+        config = default_config("/tmp/vestaforge-test")
+        self.assertEqual(config["radio"]["providers"], ["meshtastic-simulated"])
+        self.assertTrue(config["radio"]["simulator"]["enable"])
+        self.assertFalse(config["radio"]["reticulumRnode"]["enable"])
+
 
 if __name__ == "__main__":
     unittest.main()

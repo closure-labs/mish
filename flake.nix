@@ -164,6 +164,36 @@
             failedMatrixAssertions = builtins.filter (
               assertion: !assertion.assertion
             ) invalidMatrixConfig.assertions;
+            fakeRns = pkgs.writeShellScriptBin "rnsd" ''
+              echo "fake rnsd for VestaForge module evaluation"
+            '';
+            reticulumConfig =
+              (lib.nixosSystem {
+                inherit system;
+                modules = [
+                  (
+                    { ... }:
+                    {
+                      nixpkgs.overlays = [ self.overlays.default ];
+                    }
+                  )
+                  self.nixosModules.vestaforge
+                  {
+                    system.stateVersion = "25.05";
+                    services.vestaforge = {
+                      enable = true;
+                      radio = {
+                        providers = [ "reticulum-rnode" ];
+                        reticulumRnode = {
+                          package = fakeRns;
+                          port = "/dev/ttyUSB0";
+                          frequency = 915000000;
+                        };
+                      };
+                    };
+                  }
+                ];
+              }).config;
             profileReleaseGated =
               if profileConfig.den.quirks.meshServices.profile.releaseGated then "1" else "0";
             profilePrimaryAcceptance =
@@ -207,6 +237,29 @@
                   }
                   ''
                     test "$failedCount" -gt 0
+                    touch "$out"
+                  '';
+
+              reticulum-rnode-provider =
+                pkgs.runCommand "vestaforge-reticulum-rnode-provider-check"
+                  {
+                    providers = builtins.concatStringsSep "," reticulumConfig.services.vestaforge.radio.providers;
+                    simulatorEnabled =
+                      if reticulumConfig.den.quirks.meshServices.radio.simulatorEnabled then "1" else "0";
+                    reticulumEnabled =
+                      if reticulumConfig.den.quirks.meshServices.radio.reticulumRnodeEnabled then "1" else "0";
+                    reticulumServiceUser =
+                      reticulumConfig.systemd.services.vestaforge-reticulum-rnode.serviceConfig.User;
+                    reticulumPort = reticulumConfig.den.quirks.meshServices.radio.reticulumRnode.port;
+                    reticulumMode = reticulumConfig.den.quirks.meshServices.radio.reticulumRnode.mode;
+                  }
+                  ''
+                    test "$providers" = "reticulum-rnode"
+                    test "$simulatorEnabled" = "0"
+                    test "$reticulumEnabled" = "1"
+                    test "$reticulumServiceUser" = "vestaforge"
+                    test "$reticulumPort" = "/dev/ttyUSB0"
+                    test "$reticulumMode" = "access_point"
                     touch "$out"
                   '';
 

@@ -14,10 +14,5 @@ in
         relays = cfg.nostr.relays;
       };
     };
-
-    den.quirks.meshServices.radio = {
-      simulatorEnabled = cfg.radio.simulator.enable;
-      hardwareMeshtasticEnabled = false;
-    };
   };
 }

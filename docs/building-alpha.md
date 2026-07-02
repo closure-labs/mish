@@ -21,6 +21,7 @@ This performs:
 - all-system flake evaluation with `nix flake check --no-build --all-systems`
 - explicit profile assertions for Mini-PC and RPi4
 - host-native Darwin package, schema, and CLI checks
+- Reticulum/RNode provider module evaluation with a fake `rnsd` package
 - Linux image dry-runs for both release-gated targets
 
 This is the strongest check that does not require Linux builders.
