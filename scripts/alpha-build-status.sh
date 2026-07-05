@@ -86,6 +86,11 @@ expect_eval_json "rpi4.profile" ".#nixosConfigurations.vestaforge-rpi4.config.se
 expect_eval_json "rpi4.matrix.provider" ".#nixosConfigurations.vestaforge-rpi4.config.services.vestaforge.matrix.provider" '"conduit"'
 expect_eval_json "rpi4.matrix.backend" ".#nixosConfigurations.vestaforge-rpi4.config.den.quirks.meshServices.matrix.backend" '"conduit"'
 expect_eval_json "rpi4.profile.releaseGated" ".#nixosConfigurations.vestaforge-rpi4.config.den.quirks.meshServices.profile.releaseGated" "true"
+expect_eval_json "rpi5.profile" ".#nixosConfigurations.vestaforge-rpi5-nvme.config.services.vestaforge.profile" '"sbc-rpi5-nvme"'
+expect_eval_json "rpi5.matrix.provider" ".#nixosConfigurations.vestaforge-rpi5-nvme.config.services.vestaforge.matrix.provider" '"conduit"'
+expect_eval_json "rpi5.profile.releaseGated" ".#nixosConfigurations.vestaforge-rpi5-nvme.config.den.quirks.meshServices.profile.releaseGated" "false"
+expect_eval_json "rpi5.profile.experimental" ".#nixosConfigurations.vestaforge-rpi5-nvme.config.den.quirks.meshServices.profile.experimental" "true"
+expect_eval_json "rpi5.nixDistribution" ".#nixosConfigurations.vestaforge-rpi5-nvme.config.services.vestaforge.nixDistribution" '"nixos"'
 
 case "${current_system}" in
   aarch64-darwin)

@@ -6,6 +6,12 @@ let
     "mini-pc"
     "sbc-rpi4"
   ];
+  knownProfiles = [
+    "mini-pc"
+    "sbc-rpi4"
+    "sbc-rpi5-nvme"
+    "home-server"
+  ];
   isAlphaReleaseProfile = lib.elem cfg.profile alphaReleaseProfiles;
 in
 {
@@ -27,17 +33,15 @@ in
     den.aspects.profile = {
       name = cfg.profile;
       releaseGated = isAlphaReleaseProfile;
-      profiles = [
-        "mini-pc"
-        "sbc-rpi4"
-        "home-server"
-      ];
+      profiles = knownProfiles;
+      experimental = cfg.profile == "sbc-rpi5-nvme";
     };
 
     den.quirks.meshServices.profile = {
       name = cfg.profile;
       releaseGated = isAlphaReleaseProfile;
       primaryAcceptanceTarget = isAlphaReleaseProfile;
+      experimental = cfg.profile == "sbc-rpi5-nvme";
     };
   };
 }

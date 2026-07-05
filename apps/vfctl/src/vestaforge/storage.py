@@ -66,6 +66,7 @@ def default_config(state_dir: str | None = None) -> dict[str, Any]:
         "version": VERSION,
         "profile": "mini-pc",
         "domain": "vestaforge.local",
+        "nixDistribution": "nixos",
         "stateDir": state,
         "api": {"bindHost": "127.0.0.1", "port": 8787},
         "matrix": {
@@ -458,6 +459,7 @@ def status_payload(config: dict[str, Any], include_probes: bool = True) -> dict[
         "version": config.get("version", VERSION),
         "profile": config.get("profile", "mini-pc"),
         "domain": config.get("domain", "vestaforge.local"),
+        "nixDistribution": config.get("nixDistribution", "nixos"),
         "stateDir": config.get("stateDir"),
         "matrix": {
             "provider": matrix.get("provider"),

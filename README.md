@@ -9,14 +9,17 @@ wiring, signed GeoPack manifests, and mock/file Nostr publication.
 
 The 0.1 release-gated targets are `x86_64-linux` with the `mini-pc` profile and
 `aarch64-linux` with the `sbc-rpi4` profile. `home-server` is represented in the
-catalog and option model, but is not release-gated by this alpha.
+catalog and option model, but is not release-gated by this alpha. Raspberry Pi 5
+NVMe support is represented as the experimental `sbc-rpi5-nvme` profile and is
+not an alpha acceptance target.
 
 ## Flake Outputs
 
 - `nixosConfigurations.vestaforge-mini-pc`
 - `nixosConfigurations.vestaforge-rpi4`
+- `nixosConfigurations.vestaforge-rpi5-nvme`
 - `packages.x86_64-linux.{vestaforge-control,vestaforge-image,vestaforge-mini-pc-image}`
-- `packages.aarch64-linux.{vestaforge-control,vestaforge-image,vestaforge-rpi4-image}`
+- `packages.aarch64-linux.{vestaforge-control,vestaforge-image,vestaforge-rpi4-image,vestaforge-rpi5-installer-image,vestaforge-rpi5-nvme-system}`
 - `packages.aarch64-darwin.vestaforge-control`
 - `checks.x86_64-linux.{module-eval,matrix-dual-provider-policy,reticulum-rnode-provider,schema,cli,service-config,vm-smoke,vm}`
 - `checks.aarch64-linux.{module-eval,matrix-dual-provider-policy,reticulum-rnode-provider,schema,cli,service-config}`
@@ -70,8 +73,9 @@ set `VESTAFORGE_STATE_DIR` or pass `--state-dir`.
 The appliance module exposes:
 
 - `services.vestaforge.enable`
-- `services.vestaforge.profile = "mini-pc" | "sbc-rpi4" | "home-server"`
+- `services.vestaforge.profile = "mini-pc" | "sbc-rpi4" | "sbc-rpi5-nvme" | "home-server"`
 - `services.vestaforge.domain`
+- `services.vestaforge.nixDistribution = "nixos" | "determinate"`
 - `services.vestaforge.matrix.provider = "tuwunel" | "conduit"`
 - `services.vestaforge.openziti.enable`
 - `services.vestaforge.geopack.enable`
@@ -141,3 +145,5 @@ from Darwin.
 
 See `docs/building-alpha.md` for local readiness levels and Darwin Linux builder
 notes.
+See `docs/pi5-experimental.md` for the non-release-gated Raspberry Pi 5 NVMe
+test path and Determinate Nix switch-over notes.

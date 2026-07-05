@@ -32,6 +32,7 @@ in
       type = lib.types.enum [
         "mini-pc"
         "sbc-rpi4"
+        "sbc-rpi5-nvme"
         "home-server"
       ];
       default = "mini-pc";
@@ -42,6 +43,15 @@ in
       type = lib.types.str;
       default = "vestaforge.local";
       description = "Primary appliance domain used by service capability modules.";
+    };
+
+    nixDistribution = lib.mkOption {
+      type = lib.types.enum [
+        "nixos"
+        "determinate"
+      ];
+      default = "nixos";
+      description = "Operator-selected Nix implementation intent for the appliance. The determinate value records that the host should be switched to Determinate Nix out of band.";
     };
 
     stateDir = lib.mkOption {

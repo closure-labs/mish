@@ -5,6 +5,9 @@ VestaForge 0.1 has two release-gated appliance targets:
 - `x86_64-linux` Mini-PC: `packages.x86_64-linux.vestaforge-mini-pc-image`
 - `aarch64-linux` Raspberry Pi 4-class SBC: `packages.aarch64-linux.vestaforge-rpi4-image`
 
+The `vestaforge-rpi5-nvme` host is experimental and is not part of the alpha
+acceptance gate. See `docs/pi5-experimental.md`.
+
 On an `aarch64-darwin` development host, there are three useful verification
 levels.
 

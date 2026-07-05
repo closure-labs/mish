@@ -14,6 +14,7 @@ let
     version = "0.1.0-alpha";
     profile = cfg.profile;
     domain = cfg.domain;
+    nixDistribution = cfg.nixDistribution;
     stateDir = cfg.stateDir;
     api = {
       bindHost = cfg.api.bindHost;

@@ -1,4 +1,8 @@
-{ self, nixpkgs }:
+{
+  self,
+  nixpkgs,
+  nixos-raspberrypi,
+}:
 let
   lib = nixpkgs.lib;
   systems = [
@@ -53,6 +57,25 @@ in
     ];
   };
 
+  nixosConfigurations.vestaforge-rpi5-nvme = nixos-raspberrypi.lib.nixosSystem {
+    specialArgs = { inherit nixos-raspberrypi; };
+    modules = [
+      (
+        { ... }:
+        {
+          imports = [
+            nixos-raspberrypi.nixosModules.raspberry-pi-5.base
+            nixos-raspberrypi.nixosModules.raspberry-pi-5.bluetooth
+            nixos-raspberrypi.nixosModules.trusted-nix-caches
+          ];
+          nixpkgs.overlays = [ self.overlays.default ];
+        }
+      )
+      self.nixosModules.vestaforge
+      ../hosts/vestaforge-rpi5-nvme/configuration.nix
+    ];
+  };
+
   packages = forAllSystems (
     system:
     let
@@ -65,6 +88,9 @@ in
         aarch64-linux = {
           vestaforge-image = self.nixosConfigurations.vestaforge-rpi4.config.system.build.sdImage;
           vestaforge-rpi4-image = self.nixosConfigurations.vestaforge-rpi4.config.system.build.sdImage;
+          vestaforge-rpi5-installer-image = nixos-raspberrypi.installerImages.rpi5;
+          vestaforge-rpi5-nvme-system =
+            self.nixosConfigurations.vestaforge-rpi5-nvme.config.system.build.toplevel;
         };
       };
     in
@@ -126,6 +152,7 @@ in
         pkgs = pkgsFor system;
         miniConfig = self.nixosConfigurations.vestaforge-mini-pc.config;
         rpi4Config = self.nixosConfigurations.vestaforge-rpi4.config;
+        rpi5Config = self.nixosConfigurations.vestaforge-rpi5-nvme.config;
         profileConfig = if system == "aarch64-linux" then rpi4Config else miniConfig;
         invalidMatrixConfig =
           (lib.nixosSystem {
@@ -252,6 +279,25 @@ in
                 test "$reticulumServiceUser" = "vestaforge"
                 test "$reticulumPort" = "/dev/ttyUSB0"
                 test "$reticulumMode" = "access_point"
+                touch "$out"
+              '';
+
+          experimental-rpi5-profile =
+            pkgs.runCommand "vestaforge-experimental-rpi5-profile-check"
+              {
+                profile = rpi5Config.services.vestaforge.profile;
+                matrixProvider = rpi5Config.services.vestaforge.matrix.provider;
+                releaseGated = if rpi5Config.den.quirks.meshServices.profile.releaseGated then "1" else "0";
+                primaryAcceptanceTarget =
+                  if rpi5Config.den.quirks.meshServices.profile.primaryAcceptanceTarget then "1" else "0";
+                nixDistribution = rpi5Config.services.vestaforge.nixDistribution;
+              }
+              ''
+                test "$profile" = "sbc-rpi5-nvme"
+                test "$matrixProvider" = "conduit"
+                test "$releaseGated" = "0"
+                test "$primaryAcceptanceTarget" = "0"
+                test "$nixDistribution" = "nixos"
                 touch "$out"
               '';
 

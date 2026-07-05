@@ -128,6 +128,8 @@ class StoreTests(unittest.TestCase):
         self.assertTrue(catalog["profiles"]["mini-pc"]["releaseGated"])
         self.assertTrue(catalog["profiles"]["sbc-rpi4"]["releaseGated"])
         self.assertFalse(catalog["profiles"]["home-server"]["releaseGated"])
+        self.assertFalse(catalog["profiles"]["sbc-rpi5-nvme"]["releaseGated"])
+        self.assertTrue(catalog["profiles"]["sbc-rpi5-nvme"]["experimental"])
 
     def test_catalog_includes_reticulum_rnode_as_experimental_radio_provider(self) -> None:
         catalog_path = Path(
@@ -145,6 +147,7 @@ class StoreTests(unittest.TestCase):
 
     def test_default_config_reports_radio_providers(self) -> None:
         config = default_config("/tmp/vestaforge-test")
+        self.assertEqual(config["nixDistribution"], "nixos")
         self.assertEqual(config["radio"]["providers"], ["meshtastic-simulated"])
         self.assertTrue(config["radio"]["simulator"]["enable"])
         self.assertFalse(config["radio"]["reticulumRnode"]["enable"])

@@ -41,6 +41,13 @@
     "sbc-rpi4": {
       "defaultMatrixProvider": "conduit",
       "releaseGated": true
+    },
+    "sbc-rpi5-nvme": {
+      "bootPath": "nixos-raspberrypi",
+      "defaultMatrixProvider": "conduit",
+      "experimental": true,
+      "releaseGated": false,
+      "rootDevice": "nvme"
     }
   },
   "signature": "hmac-sha256:catalog-alpha-placeholder",
