@@ -13,7 +13,7 @@ jobs:
       - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
       - uses: cachix/install-nix-action@56a7bb7b56d9a92d4fd1bc05758de7eea4a370a8
       - run: nix flake update --accept-flake-config
-      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9
         with:
           name: updated-lock
           path: flake.lock
