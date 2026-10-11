@@ -1,9 +1,11 @@
 #!/usr/bin/env bash
 set -euo pipefail
 mkdir -p artifacts
+: > artifacts/image-roots.txt
 read -r -a image_targets <<< "${TARGETS:?Target package list required}"
 for target in "${image_targets[@]}"; do
   path=$(nix build --no-link --print-out-paths --accept-flake-config ".#packages.$SYSTEM.$target")
+  printf '%s\n' "$path" >> artifacts/image-roots.txt
   if [ -d "$path/iso" ]; then
     cp "$path"/iso/*.iso artifacts/
   elif [ -d "$path/sd-image" ]; then

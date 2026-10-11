@@ -115,6 +115,14 @@ in
       default = pkgs.mish-control;
       mish-control = pkgs.mish-control;
     }
+    // lib.optionalAttrs (builtins.elem system linuxSystems) {
+      mish-validation = import ./validation.nix {
+        inherit pkgs system;
+        checks = self.checks.${system};
+        package = pkgs.mish-control;
+        lockHash = builtins.hashFile "sha256" ../flake.lock;
+      };
+    }
     // (images.${system} or { })
   );
 
@@ -145,6 +153,7 @@ in
           pkgs.clippy
           pkgs.pkg-config
           pkgs.sqlite
+          pkgs.cachix
           pkgs.python3
         ];
         env.PKG_CONFIG_PATH = "${pkgs.sqlite.dev}/lib/pkgconfig";
@@ -391,7 +400,8 @@ in
                 mish --state-dir "$MISH_STATE_DIR" identity bootstrap-operator > "$TMPDIR/operator.json"
                 export MISH_CATALOG_PATH=${../catalog/mish-catalog.json}
                 export MISH_QUEUE_SCRIPT_PATH=${../.github/scripts/queue_prs.py}
-                python3 -m unittest discover -s ${../tests} -p test_merge_queue.py
+                export MISH_CACHE_SCRIPT_PATH=${../.github/scripts/cache-outputs.sh}
+                python3 -m unittest discover -s ${../tests} -p 'test_*.py'
                 touch "$out"
               '';
 
@@ -490,7 +500,8 @@ in
                 mish --state-dir "$MISH_STATE_DIR" identity bootstrap-operator > "$TMPDIR/operator.json"
                 export MISH_CATALOG_PATH=${../catalog/mish-catalog.json}
                 export MISH_QUEUE_SCRIPT_PATH=${../.github/scripts/queue_prs.py}
-                python3 -m unittest discover -s ${../tests} -p test_merge_queue.py
+                export MISH_CACHE_SCRIPT_PATH=${../.github/scripts/cache-outputs.sh}
+                python3 -m unittest discover -s ${../tests} -p 'test_*.py'
                 touch "$out"
               '';
         };

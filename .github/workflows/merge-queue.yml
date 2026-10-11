@@ -23,7 +23,9 @@ jobs:
         with:
           ref: main
           persist-credentials: false
-      - uses: cachix/install-nix-action@13d8dd58da0234aa297dedd986986ccb8e7f3e24
+      - uses: ./.github/actions/nix
+        with:
+          public-key: ${{ vars.CACHIX_PUBKEY || 'mish.cachix.org-1:TVqZ5PamlcnYEpNEJtBz7xNmS7H5X/gXQXYVeDBD4FY=' }}
       - name: Validate GitHub App configuration
         env:
           MISH_QUEUE_APP_ID: ${{ vars.MISH_QUEUE_APP_ID }}

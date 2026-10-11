@@ -26,16 +26,20 @@ jobs:
     timeout-minutes: 240
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
-      - uses: cachix/install-nix-action@13d8dd58da0234aa297dedd986986ccb8e7f3e24
-      - uses: nix-community/cache-nix-action@7df957e333c1e5da7721f60227dbba6d06080569
+      - uses: ./.github/actions/nix
         with:
-          primary-key: nix-${{ runner.os }}-${{ runner.arch }}-${{ hashFiles('flake.lock') }}
-          restore-prefixes-first-match: nix-${{ runner.os }}-${{ runner.arch }}-
+          public-key: ${{ vars.CACHIX_PUBKEY || 'mish.cachix.org-1:TVqZ5PamlcnYEpNEJtBz7xNmS7H5X/gXQXYVeDBD4FY=' }}
+          token: ${{ github.ref == 'refs/heads/main' && (github.event_name == 'push' || github.event_name == 'schedule' || github.event_name == 'workflow_dispatch') && secrets.CACHIX_TOKEN || '' }}
       - name: Build committed inputs and archive complete closures
         env:
           SYSTEM: ${{ matrix.system }}
           TARGETS: ${{ matrix.targets }}
         run: nix develop --accept-flake-config --command bash .github/scripts/build-images.sh
+      - name: Cache image closures, developer shell, and validation evidence
+        env:
+          SYSTEM: ${{ matrix.system }}
+          MISH_CACHE_UPLOAD: ${{ github.ref == 'refs/heads/main' && (github.event_name == 'push' || github.event_name == 'schedule' || github.event_name == 'workflow_dispatch') }}
+        run: nix develop --accept-flake-config --command bash .github/scripts/cache-outputs.sh
       - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9
         with:
           name: images-${{ matrix.system }}
