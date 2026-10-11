@@ -7,6 +7,9 @@ inputs:
   token:
     description: CACHIX_TOKEN; supply only for trusted main or release jobs
     default: ''
+  restore-store:
+    description: Restore the supplementary GitHub store snapshot
+    default: 'true'
 runs:
   using: composite
   steps:
@@ -16,6 +19,7 @@ runs:
           extra-substituters = https://mish.cachix.org
           extra-trusted-public-keys = ${{ inputs.public-key }}
     - uses: nix-community/cache-nix-action@7df957e333c1e5da7721f60227dbba6d06080569
+      if: inputs.restore-store == 'true'
       with:
         primary-key: nix-v2-${{ runner.os }}-${{ runner.arch }}-${{ hashFiles('flake.lock', 'apps/mish/Cargo.lock') }}-${{ github.sha }}-${{ github.workflow }}
         restore-prefixes-first-match: |

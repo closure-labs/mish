@@ -42,6 +42,11 @@ prefixes reuse matching dependencies; a new revision can save newly built
 outputs. Store snapshots are garbage-collected to a 5 GiB target before saving.
 Cachix provides reuse across branches, workflows and developers.
 
+The manual Checks workflow has a cold-cache option. It skips GitHub's store
+snapshot on fresh hosted runners while retaining the signed Cachix substituter.
+Use this after seeding main to verify that packages and check outputs really
+restore from Mish Cachix. Manual Checks remain read-only for cache uploads.
+
 ## Validation evidence
 
 On either native Linux architecture:

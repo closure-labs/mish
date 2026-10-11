@@ -7,6 +7,11 @@ on:
   push:
     branches: [main]
   workflow_dispatch:
+    inputs:
+      cold-cache:
+        description: Skip the GitHub store snapshot to verify signed Cachix restores
+        type: boolean
+        default: false
 permissions:
   contents: read
 concurrency:
@@ -29,6 +34,7 @@ jobs:
       - uses: ./.github/actions/nix
         with:
           public-key: ${{ vars.CACHIX_PUBKEY || 'mish.cachix.org-1:TVqZ5PamlcnYEpNEJtBz7xNmS7H5X/gXQXYVeDBD4FY=' }}
+          restore-store: ${{ inputs.cold-cache != true }}
           token: ${{ github.event_name == 'push' && github.ref == 'refs/heads/main' && secrets.CACHIX_TOKEN || '' }}
       - name: Evaluate all supported systems and checks
         id: evaluation
