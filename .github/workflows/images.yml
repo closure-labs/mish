@@ -21,6 +21,7 @@ jobs:
       - uses: ./.github/actions/nix
         with:
           public-key: ${{ vars.CACHIX_PUBKEY || 'mish.cachix.org-1:TVqZ5PamlcnYEpNEJtBz7xNmS7H5X/gXQXYVeDBD4FY=' }}
+          restore-store: 'false'
       - name: Validate gate policy and record qualification dependencies
         run: nix develop --accept-flake-config --command python .github/scripts/qualification.py
       - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9
@@ -86,6 +87,7 @@ jobs:
       - uses: ./.github/actions/nix
         with:
           public-key: ${{ vars.CACHIX_PUBKEY || 'mish.cachix.org-1:TVqZ5PamlcnYEpNEJtBz7xNmS7H5X/gXQXYVeDBD4FY=' }}
+          restore-store: 'false'
       - name: Fail unless every declared prerequisite succeeded
         env:
           GATE_RESULTS: ${{ toJSON(needs) }}

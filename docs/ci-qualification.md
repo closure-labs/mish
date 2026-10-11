@@ -4,6 +4,9 @@ Mish validates the exact PR merge commit, merge-group commit, main revision or
 tag being built. Every PR and merge group runs both native Linux check jobs.
 Change qualifiers describe affected components; they never skip validation.
 Unknown paths or unavailable diffs retain full validation.
+Qualifier and aggregate jobs use signed binary substitutes without saving GitHub
+store snapshots, keeping the native jobs’ snapshot keys available for complete
+validation outputs.
 
 ```mermaid
 flowchart TD
