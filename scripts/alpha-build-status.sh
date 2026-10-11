@@ -5,7 +5,7 @@ usage() {
   cat <<'USAGE'
 Usage: scripts/alpha-build-status.sh [--full]
 
-Runs the VestaForge alpha build-readiness checks that are safe on the current
+Runs the Mish alpha build-readiness checks that are safe on the current
 host. By default this performs all-system evaluation, host-native checks, and
 Linux image dry-runs. Use --full to require real Linux builds through a
 configured Linux builder.
@@ -51,7 +51,7 @@ dry_run_image() {
   local attr="$2"
   local log
 
-  log="$(mktemp "${TMPDIR:-/tmp}/vestaforge-${label}.XXXXXX")"
+  log="$(mktemp "${TMPDIR:-/tmp}/mish-${label}.XXXXXX")"
   if nix build "${attr}" --dry-run >"${log}" 2>&1; then
     echo "ok: ${label} dry-run"
     grep -E '^(this|these) [0-9]+ (derivation|derivations|path|paths)' "${log}" || true
@@ -78,24 +78,24 @@ echo "== all-system flake evaluation =="
 nix flake check --no-build --all-systems
 
 echo "== alpha profile assertions =="
-expect_eval_json "mini-pc.profile" ".#nixosConfigurations.vestaforge-mini-pc.config.services.vestaforge.profile" '"mini-pc"'
-expect_eval_json "mini-pc.matrix.provider" ".#nixosConfigurations.vestaforge-mini-pc.config.services.vestaforge.matrix.provider" '"tuwunel"'
-expect_eval_json "mini-pc.matrix.backend" ".#nixosConfigurations.vestaforge-mini-pc.config.den.quirks.meshServices.matrix.backend" '"tuwunel"'
-expect_eval_json "mini-pc.profile.releaseGated" ".#nixosConfigurations.vestaforge-mini-pc.config.den.quirks.meshServices.profile.releaseGated" "true"
-expect_eval_json "rpi4.profile" ".#nixosConfigurations.vestaforge-rpi4.config.services.vestaforge.profile" '"sbc-rpi4"'
-expect_eval_json "rpi4.matrix.provider" ".#nixosConfigurations.vestaforge-rpi4.config.services.vestaforge.matrix.provider" '"conduit"'
-expect_eval_json "rpi4.matrix.backend" ".#nixosConfigurations.vestaforge-rpi4.config.den.quirks.meshServices.matrix.backend" '"conduit"'
-expect_eval_json "rpi4.profile.releaseGated" ".#nixosConfigurations.vestaforge-rpi4.config.den.quirks.meshServices.profile.releaseGated" "true"
-expect_eval_json "rpi5.profile" ".#nixosConfigurations.vestaforge-rpi5-nvme.config.services.vestaforge.profile" '"sbc-rpi5-nvme"'
-expect_eval_json "rpi5.matrix.provider" ".#nixosConfigurations.vestaforge-rpi5-nvme.config.services.vestaforge.matrix.provider" '"conduit"'
-expect_eval_json "rpi5.profile.releaseGated" ".#nixosConfigurations.vestaforge-rpi5-nvme.config.den.quirks.meshServices.profile.releaseGated" "false"
-expect_eval_json "rpi5.profile.experimental" ".#nixosConfigurations.vestaforge-rpi5-nvme.config.den.quirks.meshServices.profile.experimental" "true"
-expect_eval_json "rpi5.nixDistribution" ".#nixosConfigurations.vestaforge-rpi5-nvme.config.services.vestaforge.nixDistribution" '"nixos"'
+expect_eval_json "mini-pc.profile" ".#nixosConfigurations.mish-mini-pc.config.services.mish.profile" '"mini-pc"'
+expect_eval_json "mini-pc.matrix.provider" ".#nixosConfigurations.mish-mini-pc.config.services.mish.matrix.provider" '"tuwunel"'
+expect_eval_json "mini-pc.matrix.backend" ".#nixosConfigurations.mish-mini-pc.config.den.quirks.meshServices.matrix.backend" '"tuwunel"'
+expect_eval_json "mini-pc.profile.releaseGated" ".#nixosConfigurations.mish-mini-pc.config.den.quirks.meshServices.profile.releaseGated" "true"
+expect_eval_json "rpi4.profile" ".#nixosConfigurations.mish-rpi4.config.services.mish.profile" '"sbc-rpi4"'
+expect_eval_json "rpi4.matrix.provider" ".#nixosConfigurations.mish-rpi4.config.services.mish.matrix.provider" '"conduit"'
+expect_eval_json "rpi4.matrix.backend" ".#nixosConfigurations.mish-rpi4.config.den.quirks.meshServices.matrix.backend" '"conduit"'
+expect_eval_json "rpi4.profile.releaseGated" ".#nixosConfigurations.mish-rpi4.config.den.quirks.meshServices.profile.releaseGated" "true"
+expect_eval_json "rpi5.profile" ".#nixosConfigurations.mish-rpi5-nvme.config.services.mish.profile" '"sbc-rpi5-nvme"'
+expect_eval_json "rpi5.matrix.provider" ".#nixosConfigurations.mish-rpi5-nvme.config.services.mish.matrix.provider" '"conduit"'
+expect_eval_json "rpi5.profile.releaseGated" ".#nixosConfigurations.mish-rpi5-nvme.config.den.quirks.meshServices.profile.releaseGated" "false"
+expect_eval_json "rpi5.profile.experimental" ".#nixosConfigurations.mish-rpi5-nvme.config.den.quirks.meshServices.profile.experimental" "true"
+expect_eval_json "rpi5.nixDistribution" ".#nixosConfigurations.mish-rpi5-nvme.config.services.mish.nixDistribution" '"nixos"'
 
 case "${current_system}" in
   aarch64-darwin)
     echo "== host-native Darwin package and checks =="
-    nix build .#packages.aarch64-darwin.vestaforge-control --no-link
+    nix build .#packages.aarch64-darwin.mish-control --no-link
     nix build .#checks.aarch64-darwin.schema --no-link
     nix build .#checks.aarch64-darwin.cli --no-link
     ;;
@@ -105,8 +105,8 @@ case "${current_system}" in
 esac
 
 echo "== Linux image closure planning =="
-dry_run_image "mini-pc-image" ".#packages.x86_64-linux.vestaforge-mini-pc-image"
-dry_run_image "rpi4-image" ".#packages.aarch64-linux.vestaforge-rpi4-image"
+dry_run_image "mini-pc-image" ".#packages.x86_64-linux.mish-mini-pc-image"
+dry_run_image "rpi4-image" ".#packages.aarch64-linux.mish-rpi4-image"
 
 if [ "${full}" -eq 1 ]; then
   echo "== Linux builder-backed checks =="
@@ -118,8 +118,8 @@ external builders. If no Linux-capable builder is available, Nix will fail with
 NOTE
   nix build .#checks.x86_64-linux.cli --no-link
   nix build .#checks.aarch64-linux.module-eval --no-link
-  nix build .#packages.x86_64-linux.vestaforge-mini-pc-image --no-link
-  nix build .#packages.aarch64-linux.vestaforge-rpi4-image --no-link
+  nix build .#packages.x86_64-linux.mish-mini-pc-image --no-link
+  nix build .#packages.aarch64-linux.mish-rpi4-image --no-link
 else
   cat <<'NOTE'
 full-build-status: skipped

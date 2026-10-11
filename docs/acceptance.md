@@ -15,7 +15,7 @@ run; a workflow definition or image build is not physical acceptance evidence.
 
 Record command, architecture and pass/fail result separately for:
 
-- [ ] Python tests and schema/example validation.
+- [ ] Rust behavioral tests, formatting/Clippy and schema/example validation.
 - [ ] Non-mutating formatting and all-system flake evaluation.
 - [ ] Native x86 and ARM packages/checks built from the committed lockfile.
 - [ ] x86 VM boot and application interaction passed.

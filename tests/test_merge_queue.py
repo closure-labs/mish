@@ -8,7 +8,7 @@ import unittest
 from unittest.mock import patch
 
 
-script = os.environ.get('VESTAFORGE_QUEUE_SCRIPT_PATH', str(Path(__file__).parents[1] / '.github/scripts/queue_prs.py'))
+script = os.environ.get('MISH_QUEUE_SCRIPT_PATH', str(Path(__file__).parents[1] / '.github/scripts/queue_prs.py'))
 spec = importlib.util.spec_from_file_location('queue_prs', script)
 queue_prs = importlib.util.module_from_spec(spec)
 spec.loader.exec_module(queue_prs)

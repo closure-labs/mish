@@ -27,8 +27,8 @@ not commit channel keys to the repository or put them in Nix expressions.
 ## Prepare and install x86
 
 ```bash
-nix build .#packages.x86_64-linux.vestaforge-mini-pc-installer
-nix build .#packages.x86_64-linux.vestaforge-mini-pc-image
+nix build .#packages.x86_64-linux.mish-mini-pc-installer
+nix build .#packages.x86_64-linux.mish-mini-pc-image
 ```
 
 The first output is an ISO for installation/rescue tooling; the second is a
@@ -45,11 +45,11 @@ Generate the physical machine's hardware configuration:
 nixos-generate-config --root /mnt
 ```
 
-The ISO includes the complete repository at `/etc/vestaforge-source`. Copy
+The ISO includes the complete repository at `/etc/mish-source`. Copy
 that source into the installed configuration, keeping its committed lockfile:
 
 ```bash
-cp -r /etc/vestaforge-source /mnt/etc/nixos/source
+cp -r /etc/mish-source /mnt/etc/nixos/source
 chmod -R u+w /mnt/etc/nixos/source
 ```
 
@@ -60,22 +60,22 @@ The QEMU mini-PC host is a VM definition and is deliberately not imported here.
 
 ```nix
 {
-  inputs.vestaforge.url = "path:./source";
-  inputs.nixpkgs.follows = "vestaforge/nixpkgs";
-  outputs = { self, nixpkgs, vestaforge }: {
+  inputs.mish.url = "path:./source";
+  inputs.nixpkgs.follows = "mish/nixpkgs";
+  outputs = { self, nixpkgs, mish }: {
     nixosConfigurations.coordinator = nixpkgs.lib.nixosSystem {
       system = "x86_64-linux";
       modules = [
         ./hardware-configuration.nix
-        vestaforge.nixosModules.vestaforge
+        mish.nixosModules.mish
         ({ ... }: {
-          nixpkgs.overlays = [ vestaforge.overlays.default ];
+          nixpkgs.overlays = [ mish.overlays.default ];
           nix.settings.experimental-features = [ "nix-command" "flakes" ];
           boot.loader.systemd-boot.enable = true;
           boot.loader.efi.canTouchEfiVariables = true;
           networking.hostName = "mish-coordinator";
           networking.useDHCP = true;
-          services.vestaforge = {
+          services.mish = {
             enable = true;
             profile = "mini-pc";
             coordinatorId = "coordinator-1";
@@ -128,7 +128,7 @@ users.users.root.openssh.authorizedKeys.keys = [
 
 A public key is safe to include in that operator-specific artifact; never
 include the private key. Build
-`packages.aarch64-linux.vestaforge-rpi4-image`, verify its checksum and write the
+`packages.aarch64-linux.mish-rpi4-image`, verify its checksum and write the
 uncompressed image to a correctly identified SD card. Connect Ethernet to the
 trusted AP and verify the appliance SSH host-key fingerprint through a trusted
 local method before enrollment. Confirm boot, firmware, SSH access, Ethernet,
@@ -142,8 +142,8 @@ Find the actual stable device path:
 
 ```bash
 ls -l /dev/serial/by-id/
-systemctl status vestaforge-control
-journalctl -u vestaforge-control -n 100
+systemctl status mish-control
+journalctl -u mish-control -n 100
 ```
 
 Replace the placeholder device in the physical configuration, rebuild and
@@ -165,19 +165,19 @@ trust the new root.
 
 ## Enroll and send the first message
 
-Run privileged local CLI commands as `vestaforge` so state ownership remains
+Run privileged local CLI commands as `mish` so state ownership remains
 correct. Global `--config` and `--state-dir` flags precede the subcommand.
 
 ```bash
-sudo -u vestaforge vfctl --config /etc/vestaforge/config.json commission --name 'Event operator'
-sudo -u vestaforge vfctl --config /etc/vestaforge/config.json enroll --name 'Alice'
-sudo -u vestaforge vfctl --config /etc/vestaforge/config.json enroll --name 'Bob'
+sudo -u mish mish --config /etc/mish/config.json commission --name 'Event operator'
+sudo -u mish mish --config /etc/mish/config.json enroll --name 'Alice'
+sudo -u mish mish --config /etc/mish/config.json enroll --name 'Bob'
 ```
 
 Each successful enrollment prints an identity ID and a bearer token once.
 Keep the operator credential private and deliver each staff token only to its
 owner. Revoke a lost or exposed enrollment with
-`vfctl --config /etc/vestaforge/config.json revoke --id <staff-id>`, run as the
+`mish --config /etc/mish/config.json revoke --id <staff-id>`, run as the
 service user, then enroll a replacement. The last operator cannot be revoked;
 enroll a replacement operator first. A CLI user with access to appliance state is trusted administrative
 access; HTTP roles are enforced for browser requests. Do not share a staff
@@ -195,9 +195,9 @@ the radio-reported node/channel acknowledgement.
 Operator CLI equivalents are available for local recovery:
 
 ```bash
-sudo -u vestaforge vfctl --config /etc/vestaforge/config.json message --author 'Event operator' --text 'Staff check-in'
-sudo -u vestaforge vfctl --config /etc/vestaforge/config.json messages
-sudo -u vestaforge vfctl --config /etc/vestaforge/config.json announce --text 'Water station is open'
+sudo -u mish mish --config /etc/mish/config.json message --author 'Event operator' --text 'Staff check-in'
+sudo -u mish mish --config /etc/mish/config.json messages
+sudo -u mish mish --config /etc/mish/config.json announce --text 'Water station is open'
 ```
 
 `alert` takes `--text`, `--author`, `--responder`, `--expires` (Unix epoch time
@@ -207,7 +207,7 @@ UTF-8 bytes for the initial radio path. Observe queue/submission/transport state
 and explicit human acknowledgements independently. Authenticated `/api/status`
 reports the selected adapter and current radio connection state. The journal
 also displays enrolled author names. Real-radio sends use a default 30-second
-interval, configurable with `services.vestaforge.radio.meshtastic.sendIntervalSeconds`;
+interval, configurable with `services.mish.radio.meshtastic.sendIntervalSeconds`;
 that interval is engineering pacing, not promised RF delivery latency. An uncertain send requires
 operator review; do not equate it with failure or automatically resend it.
 There is no retry command for uncertain records: check radio receipt first, then
@@ -224,8 +224,8 @@ Make a consistent SQLite backup into a private writable directory owned by the
 service user, then move the resulting file to protected removable storage:
 
 ```bash
-sudo install -d -m 0700 -o vestaforge -g vestaforge /var/lib/vestaforge/backups
-sudo -u vestaforge vfctl --config /etc/vestaforge/config.json backup --output /var/lib/vestaforge/backups/event.sqlite
+sudo install -d -m 0700 -o mish -g mish /var/lib/mish/backups
+sudo -u mish mish --config /etc/mish/config.json backup --output /var/lib/mish/backups/event.sqlite
 ```
 
 Use a new output filename for every backup; existing files are never overwritten.
@@ -233,29 +233,29 @@ The SQLite backup contains event journal, acknowledgement history, publication
 and enrolled credential hashes. It does not include the complete appliance:
 separately back up `/etc/nixos` and its lockfile/hardware configuration,
 `/var/lib/caddy` (including private CA material), any configured runtime
-credential files and legacy VestaForge state/keys if used. Export the radio's
+credential files and legacy Mish state/keys if used. Export the radio's
 configuration separately and protect its private channel key. Protect all
 backup media as private event data.
 
 To restore, keep the old coordinator stopped before activating a spare. Copy
 the standalone backup to protected local storage outside the active state
-directory, readable by `vestaforge`. Stop the application and preserve its
+directory, readable by `mish`. Stop the application and preserve its
 entire existing state directory, including any SQLite sidecars. Choose a new
 recovery-copy name each time; the example requires that name to be absent:
 
 ```bash
-sudo systemctl stop vestaforge-control
-sudo test ! -e /var/lib/vestaforge-before-restore
-sudo mv -T /var/lib/vestaforge /var/lib/vestaforge-before-restore
-sudo install -d -m 0700 -o vestaforge -g vestaforge /var/lib/vestaforge
-sudo -u vestaforge vfctl --config /etc/vestaforge/config.json restore --input /protected-local-storage/event.sqlite
+sudo systemctl stop mish-control
+sudo test ! -e /var/lib/mish-before-restore
+sudo mv -T /var/lib/mish /var/lib/mish-before-restore
+sudo install -d -m 0700 -o mish -g mish /var/lib/mish
+sudo -u mish mish --config /etc/mish/config.json restore --input /protected-local-storage/event.sqlite
 ```
 
 Check each command succeeded before continuing. On a fresh spare without an
 existing state directory, omit the `mv` step. `restore` validates the database
 and required journal schema, stages a private `0600` database, and installs it
 atomically. It refuses existing event databases or SQLite sidecars and never
-overwrites them. Supply a backup produced by `vfctl backup`, rather than
+overwrites them. Supply a backup produced by `mish backup`, rather than
 copying a live database. Invalid input leaves no installed event database.
 Record the command's snapshot SHA-256, recovery time and quarantined count;
 the database retains these in its recovery history.
@@ -268,7 +268,7 @@ uncertain records with staff before deliberately creating replacements. An
 ordinary restart of the same database continues draining its pending queue.
 
 Restore the corresponding local config and CA data while Caddy is stopped,
-preserving their owners/modes. Start Caddy and `vestaforge-control`, verify
+preserving their owners/modes. Start Caddy and `mish-control`, verify
 authenticated staff history and public feed, and check radio status before
 sending a new test message. Credentials from that backup remain valid;
 revoke/re-enroll any exposed identity. A spare must reuse the LAN/DNS address
@@ -298,13 +298,13 @@ At event end, export the required records, stop the application, and run the
 explicit wipe:
 
 ```bash
-sudo systemctl stop vestaforge-control
-sudo -u vestaforge vfctl --config /etc/vestaforge/config.json wipe --confirm WIPE-EVENT
+sudo systemctl stop mish-control
+sudo -u mish mish --config /etc/mish/config.json wipe --confirm WIPE-EVENT
 ```
 
 Review any legacy files, runtime credential files, Caddy CA material, radio
 channel configuration, removable backups and staff device credentials
-separately. The wipe command removes the configured VestaForge state directory contents,
+separately. The wipe command removes the configured Mish state directory contents,
 including any backups stored inside it; the directory itself is retained for
 recommissioning. It requires an existing event database. Move exports off the
 appliance first.

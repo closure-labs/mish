@@ -1,0 +1,63 @@
+{
+  "capabilities": {
+    "eventCoordinator": {
+      "provider": "aiohttp-sqlite",
+      "staffAuthentication": "enrolled-bearer-token",
+      "publicFeed": "explicit-announcements-only",
+      "physicalQualification": "pending"
+    },
+    "geopack": {
+      "providers": ["local-json"],
+      "schema": "schemas/geopack-manifest.schema.json"
+    },
+    "matrix": {
+      "providers": ["tuwunel", "conduit"],
+      "quirk": "den.quirks.meshServices.matrix"
+    },
+    "openziti": {
+      "providers": ["controller", "edge-router"],
+      "quirk": "den.quirks.meshServices.openziti"
+    },
+    "radio": {
+      "providers": ["meshtastic-usb", "meshtastic-simulated", "reticulum-rnode"],
+      "releaseGatedProviders": ["meshtastic-usb", "meshtastic-simulated"],
+      "experimentalProviders": ["reticulum-rnode"],
+      "hardwareProvidersEnabled": true
+    }
+  },
+  "policies": {
+    "matrix": {
+      "denyDualBackend": true,
+      "migrationSupportedInAlpha": false
+    },
+    "publication": {
+      "nostrPublicOnly": true,
+      "requirePublicWaypoints": true
+    }
+  },
+  "profiles": {
+    "home-server": {
+      "defaultMatrixProvider": "tuwunel",
+      "releaseGated": false
+    },
+    "mini-pc": {
+      "defaultMatrixProvider": "tuwunel",
+      "releaseGated": true
+    },
+    "sbc-rpi4": {
+      "defaultMatrixProvider": "conduit",
+      "releaseGated": true
+    },
+    "sbc-rpi5-nvme": {
+      "bootPath": "nixos-raspberrypi",
+      "defaultMatrixProvider": "conduit",
+      "experimental": true,
+      "releaseGated": false,
+      "rootDevice": "nvme"
+    }
+  },
+  "signature": "hmac-sha256:catalog-alpha-placeholder",
+  "signedAt": "2026-06-22T00:00:00Z",
+  "signer": "mish:catalog-alpha",
+  "version": "0.1"
+}

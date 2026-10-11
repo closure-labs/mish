@@ -26,8 +26,8 @@ jobs:
     timeout-minutes: 120
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
-      - uses: cachix/install-nix-action@56a7bb7b56d9a92d4fd1bc05758de7eea4a370a8
-      - uses: nix-community/cache-nix-action@135667ec418502fa5a3598af6fb9eb733888ce6a
+      - uses: cachix/install-nix-action@13d8dd58da0234aa297dedd986986ccb8e7f3e24
+      - uses: nix-community/cache-nix-action@7df957e333c1e5da7721f60227dbba6d06080569
         with:
           primary-key: nix-${{ runner.os }}-${{ runner.arch }}-${{ hashFiles('flake.lock') }}
           restore-prefixes-first-match: nix-${{ runner.os }}-${{ runner.arch }}-
@@ -35,7 +35,7 @@ jobs:
         id: evaluation
         shell: bash
         run: nix flake check --all-systems --no-build --accept-flake-config 2>&1 | tee evaluation.log
-      - name: Native package and checks (x86 includes VM application test)
+      - name: Native Rust tests, format, clippy, and checks (x86 includes VM)
         id: native
         shell: bash
         run: nix flake check -L --accept-flake-config 2>&1 | tee native-checks.log
@@ -51,6 +51,7 @@ jobs:
             printf 'Source: %s\n\nArchitecture: %s\n\n' "$SOURCE_REVISION" "$SYSTEM"
             printf '| Validation | Result |\n|---|---|\n'
             printf '| All-system evaluation | %s |\n| Native package and checks | %s |\n' "$EVALUATION_RESULT" "$NATIVE_RESULT"
+            printf '\nNative package checks run Rust tests, rustfmt, and clippy with warnings denied.\n'
             if [ "$SYSTEM" = x86_64-linux ]; then
               printf '\nNative checks include the booted appliance VM and snapshot recovery scenario.\n'
             fi

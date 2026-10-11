@@ -4,13 +4,19 @@ Build the event coordinator from the committed `flake.lock`. The supported
 first-wave targets are x86_64 and Pi 4 (4 GB RAM); Pi 5 is experimental and
 is outside their physical acceptance gate.
 
+The appliance package uses Nix `buildRustPackage` with the committed
+`apps/mish/Cargo.lock`. Formatting, Clippy and Cargo tests are package checks.
+Python supports repository automation; it is not an application runtime
+dependency. Earlier image evidence does not substitute for building and
+testing the Rust port revision.
+
 ```bash
 nix flake check --no-build --all-systems
 nix flake check
-nix build .#packages.x86_64-linux.vestaforge-control
-nix build .#packages.x86_64-linux.vestaforge-mini-pc-image
-nix build .#packages.x86_64-linux.vestaforge-mini-pc-installer
-nix build .#packages.aarch64-linux.vestaforge-rpi4-image
+nix build .#packages.x86_64-linux.mish-control
+nix build .#packages.x86_64-linux.mish-mini-pc-image
+nix build .#packages.x86_64-linux.mish-mini-pc-installer
+nix build .#packages.aarch64-linux.mish-rpi4-image
 ```
 
 The mini-PC image output is a QEMU VM. The separate mini-PC installer output

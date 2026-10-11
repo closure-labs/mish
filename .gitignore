@@ -9,6 +9,7 @@ __pycache__/
 htmlcov/
 build/
 dist/
+target/
 
 # Nix/local build outputs
 result

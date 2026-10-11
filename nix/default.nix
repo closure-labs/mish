@@ -24,28 +24,28 @@ let
 in
 {
   overlays.default = final: _prev: {
-    vestaforge-control = final.callPackage ../pkgs/vestaforge-control { };
+    mish-control = final.callPackage ../pkgs/mish-control { };
   };
 
-  nixosModules.vestaforge = ../modules/nixos/vestaforge;
+  nixosModules.mish = ../modules/nixos/mish;
 
-  nixosConfigurations.vestaforge-mini-pc-installer = lib.nixosSystem {
+  nixosConfigurations.mish-mini-pc-installer = lib.nixosSystem {
     system = "x86_64-linux";
     modules = [
       ({ modulesPath, pkgs, ... }: {
         imports = [ "${modulesPath}/installer/cd-dvd/installation-cd-minimal.nix" ];
         nixpkgs.overlays = [ self.overlays.default ];
         environment.systemPackages = [
-          pkgs.vestaforge-control
+          pkgs.mish-control
           pkgs.git
           pkgs.gh
         ];
-        environment.etc."vestaforge-source".source = self;
+        environment.etc."mish-source".source = self;
         system.stateVersion = "26.05";
       })
     ];
   };
-  nixosConfigurations.vestaforge-mini-pc = lib.nixosSystem {
+  nixosConfigurations.mish-mini-pc = lib.nixosSystem {
     system = "x86_64-linux";
     modules = [
       (
@@ -54,12 +54,12 @@ in
           nixpkgs.overlays = [ self.overlays.default ];
         }
       )
-      self.nixosModules.vestaforge
-      ../hosts/vestaforge-mini-pc/configuration.nix
+      self.nixosModules.mish
+      ../hosts/mish-mini-pc/configuration.nix
     ];
   };
 
-  nixosConfigurations.vestaforge-rpi4 = lib.nixosSystem {
+  nixosConfigurations.mish-rpi4 = lib.nixosSystem {
     system = "aarch64-linux";
     modules = [
       (
@@ -68,12 +68,12 @@ in
           nixpkgs.overlays = [ self.overlays.default ];
         }
       )
-      self.nixosModules.vestaforge
-      ../hosts/vestaforge-rpi4/configuration.nix
+      self.nixosModules.mish
+      ../hosts/mish-rpi4/configuration.nix
     ];
   };
 
-  nixosConfigurations.vestaforge-rpi5-nvme = nixos-raspberrypi.lib.nixosSystem {
+  nixosConfigurations.mish-rpi5-nvme = nixos-raspberrypi.lib.nixosSystem {
     specialArgs = { inherit nixos-raspberrypi; };
     modules = [
       (
@@ -87,8 +87,8 @@ in
           nixpkgs.overlays = [ self.overlays.default ];
         }
       )
-      self.nixosModules.vestaforge
-      ../hosts/vestaforge-rpi5-nvme/configuration.nix
+      self.nixosModules.mish
+      ../hosts/mish-rpi5-nvme/configuration.nix
     ];
   };
 
@@ -98,23 +98,22 @@ in
       pkgs = pkgsFor system;
       images = {
         x86_64-linux = {
-          vestaforge-mini-pc-installer =
-            self.nixosConfigurations.vestaforge-mini-pc-installer.config.system.build.isoImage;
-          vestaforge-image = self.nixosConfigurations.vestaforge-mini-pc.config.system.build.vm;
-          vestaforge-mini-pc-image = self.nixosConfigurations.vestaforge-mini-pc.config.system.build.vm;
+          mish-mini-pc-installer =
+            self.nixosConfigurations.mish-mini-pc-installer.config.system.build.isoImage;
+          mish-image = self.nixosConfigurations.mish-mini-pc.config.system.build.vm;
+          mish-mini-pc-image = self.nixosConfigurations.mish-mini-pc.config.system.build.vm;
         };
         aarch64-linux = {
-          vestaforge-image = self.nixosConfigurations.vestaforge-rpi4.config.system.build.sdImage;
-          vestaforge-rpi4-image = self.nixosConfigurations.vestaforge-rpi4.config.system.build.sdImage;
-          vestaforge-rpi5-installer-image = nixos-raspberrypi.installerImages.rpi5;
-          vestaforge-rpi5-nvme-system =
-            self.nixosConfigurations.vestaforge-rpi5-nvme.config.system.build.toplevel;
+          mish-image = self.nixosConfigurations.mish-rpi4.config.system.build.sdImage;
+          mish-rpi4-image = self.nixosConfigurations.mish-rpi4.config.system.build.sdImage;
+          mish-rpi5-installer-image = nixos-raspberrypi.installerImages.rpi5;
+          mish-rpi5-nvme-system = self.nixosConfigurations.mish-rpi5-nvme.config.system.build.toplevel;
         };
       };
     in
     {
-      default = pkgs.vestaforge-control;
-      vestaforge-control = pkgs.vestaforge-control;
+      default = pkgs.mish-control;
+      mish-control = pkgs.mish-control;
     }
     // (images.${system} or { })
   );
@@ -122,9 +121,9 @@ in
   apps = forAllSystems (system: {
     default = {
       type = "app";
-      program = "${self.packages.${system}.vestaforge-control}/bin/vfctl";
+      program = "${self.packages.${system}.mish-control}/bin/mish";
     };
-    vfctl = self.apps.${system}.default;
+    mish = self.apps.${system}.default;
   });
 
   devShells = forAllSystems (
@@ -134,16 +133,21 @@ in
     in
     {
       default = pkgs.mkShell {
+        inputsFrom = [ pkgs.mish-control ];
         packages = [
           pkgs.git
           pkgs.gh
           pkgs.nix
           pkgs.nixfmt
-          (pkgs.python3.withPackages (
-            ps: [ ps.aiohttp ] ++ lib.optionals pkgs.stdenv.hostPlatform.isLinux [ ps.meshtastic ]
-          ))
-          pkgs.vestaforge-control
+          pkgs.cargo
+          pkgs.rustc
+          pkgs.rustfmt
+          pkgs.clippy
+          pkgs.pkg-config
+          pkgs.sqlite
+          pkgs.python3
         ];
+        env.PKG_CONFIG_PATH = "${pkgs.sqlite.dev}/lib/pkgconfig";
       };
     }
   );
@@ -153,7 +157,7 @@ in
     let
       pkgs = pkgsFor system;
     in
-    pkgs.writeShellScriptBin "vestaforge-fmt" ''
+    pkgs.writeShellScriptBin "mish-fmt" ''
       set -euo pipefail
 
       if [ "$#" -gt 0 ]; then
@@ -172,9 +176,9 @@ in
       system:
       let
         pkgs = pkgsFor system;
-        miniConfig = self.nixosConfigurations.vestaforge-mini-pc.config;
-        rpi4Config = self.nixosConfigurations.vestaforge-rpi4.config;
-        rpi5Config = self.nixosConfigurations.vestaforge-rpi5-nvme.config;
+        miniConfig = self.nixosConfigurations.mish-mini-pc.config;
+        rpi4Config = self.nixosConfigurations.mish-rpi4.config;
+        rpi5Config = self.nixosConfigurations.mish-rpi5-nvme.config;
         profileConfig = if system == "aarch64-linux" then rpi4Config else miniConfig;
         invalidMatrixConfig =
           (lib.nixosSystem {
@@ -186,10 +190,10 @@ in
                   nixpkgs.overlays = [ self.overlays.default ];
                 }
               )
-              self.nixosModules.vestaforge
+              self.nixosModules.mish
               {
                 system.stateVersion = "26.05";
-                services.vestaforge = {
+                services.mish = {
                   enable = true;
                   matrix = {
                     enable = true;
@@ -207,7 +211,7 @@ in
           assertion: !assertion.assertion
         ) invalidMatrixConfig.assertions;
         fakeRns = pkgs.writeShellScriptBin "rnsd" ''
-          echo "fake rnsd for VestaForge module evaluation"
+          echo "fake rnsd for Mish module evaluation"
         '';
         reticulumConfig =
           (lib.nixosSystem {
@@ -219,10 +223,10 @@ in
                   nixpkgs.overlays = [ self.overlays.default ];
                 }
               )
-              self.nixosModules.vestaforge
+              self.nixosModules.mish
               {
                 system.stateVersion = "26.05";
-                services.vestaforge = {
+                services.mish = {
                   enable = true;
                   radio = {
                     providers = [ "reticulum-rnode" ];
@@ -242,7 +246,7 @@ in
           if profileConfig.den.quirks.meshServices.profile.primaryAcceptanceTarget then "1" else "0";
         commonChecks = {
           workflows =
-            pkgs.runCommand "vestaforge-workflows-check"
+            pkgs.runCommand "mish-workflows-check"
               {
                 nativeBuildInputs = [ pkgs.actionlint ];
               }
@@ -251,21 +255,21 @@ in
                 touch "$out"
               '';
           formatting =
-            pkgs.runCommand "vestaforge-format-check" { nativeBuildInputs = [ pkgs.nixfmt-rfc-style ]; }
+            pkgs.runCommand "mish-format-check" { nativeBuildInputs = [ pkgs.nixfmt-rfc-style ]; }
               ''
                 find ${../.} -name '*.nix' -print0 | xargs -0 nixfmt --check
                 touch "$out"
               '';
 
           module-eval =
-            pkgs.runCommand "vestaforge-${profileConfig.services.vestaforge.profile}-module-eval-check"
+            pkgs.runCommand "mish-${profileConfig.services.mish.profile}-module-eval-check"
               {
-                profile = profileConfig.services.vestaforge.profile;
-                matrixProvider = profileConfig.services.vestaforge.matrix.provider;
+                profile = profileConfig.services.mish.profile;
+                matrixProvider = profileConfig.services.mish.matrix.provider;
                 matrixBackend = profileConfig.den.quirks.meshServices.matrix.backend or "disabled";
                 releaseGated = profileReleaseGated;
                 primaryAcceptanceTarget = profilePrimaryAcceptance;
-                apiBindHost = profileConfig.services.vestaforge.api.bindHost;
+                apiBindHost = profileConfig.services.mish.api.bindHost;
               }
               ''
                 case "$profile" in
@@ -278,7 +282,7 @@ in
                     test "$matrixBackend" = "disabled"
                     ;;
                   *)
-                    echo "unexpected VestaForge alpha profile: $profile" >&2
+                    echo "unexpected Mish alpha profile: $profile" >&2
                     exit 1
                     ;;
                 esac
@@ -289,7 +293,7 @@ in
               '';
 
           matrix-dual-provider-policy =
-            pkgs.runCommand "vestaforge-matrix-dual-provider-policy-check"
+            pkgs.runCommand "mish-matrix-dual-provider-policy-check"
               {
                 failedCount = toString (builtins.length failedMatrixAssertions);
               }
@@ -299,15 +303,14 @@ in
               '';
 
           reticulum-rnode-provider =
-            pkgs.runCommand "vestaforge-reticulum-rnode-provider-check"
+            pkgs.runCommand "mish-reticulum-rnode-provider-check"
               {
-                providers = builtins.concatStringsSep "," reticulumConfig.services.vestaforge.radio.providers;
+                providers = builtins.concatStringsSep "," reticulumConfig.services.mish.radio.providers;
                 simulatorEnabled =
                   if reticulumConfig.den.quirks.meshServices.radio.simulatorEnabled then "1" else "0";
                 reticulumEnabled =
                   if reticulumConfig.den.quirks.meshServices.radio.reticulumRnodeEnabled then "1" else "0";
-                reticulumServiceUser =
-                  reticulumConfig.systemd.services.vestaforge-reticulum-rnode.serviceConfig.User;
+                reticulumServiceUser = reticulumConfig.systemd.services.mish-reticulum-rnode.serviceConfig.User;
                 reticulumPort = reticulumConfig.den.quirks.meshServices.radio.reticulumRnode.port;
                 reticulumMode = reticulumConfig.den.quirks.meshServices.radio.reticulumRnode.mode;
               }
@@ -315,21 +318,21 @@ in
                 test "$providers" = "reticulum-rnode"
                 test "$simulatorEnabled" = "0"
                 test "$reticulumEnabled" = "1"
-                test "$reticulumServiceUser" = "vestaforge"
+                test "$reticulumServiceUser" = "mish"
                 test "$reticulumPort" = "/dev/ttyUSB0"
                 test "$reticulumMode" = "access_point"
                 touch "$out"
               '';
 
           experimental-rpi5-profile =
-            pkgs.runCommand "vestaforge-experimental-rpi5-profile-check"
+            pkgs.runCommand "mish-experimental-rpi5-profile-check"
               {
-                profile = rpi5Config.services.vestaforge.profile;
-                matrixProvider = rpi5Config.services.vestaforge.matrix.provider;
+                profile = rpi5Config.services.mish.profile;
+                matrixProvider = rpi5Config.services.mish.matrix.provider;
                 releaseGated = if rpi5Config.den.quirks.meshServices.profile.releaseGated then "1" else "0";
                 primaryAcceptanceTarget =
                   if rpi5Config.den.quirks.meshServices.profile.primaryAcceptanceTarget then "1" else "0";
-                nixDistribution = rpi5Config.services.vestaforge.nixDistribution;
+                nixDistribution = rpi5Config.services.mish.nixDistribution;
               }
               ''
                 test "$profile" = "sbc-rpi5-nvme"
@@ -341,69 +344,69 @@ in
               '';
 
           schema =
-            pkgs.runCommand "vestaforge-schema-check"
+            pkgs.runCommand "mish-schema-check"
               {
-                nativeBuildInputs = [ pkgs.vestaforge-control ];
+                nativeBuildInputs = [ pkgs.mish-control ];
               }
               ''
-                vfctl internal-check-schemas \
+                mish internal-check-schemas \
                   --schemas ${../schemas} \
                   --examples ${../examples} \
-                  --catalog ${../catalog/vestaforge-catalog.json}
+                  --catalog ${../catalog/mish-catalog.json}
                 touch "$out"
               '';
 
           cli =
-            pkgs.runCommand "vestaforge-cli-check"
+            pkgs.runCommand "mish-cli-check"
               {
                 nativeBuildInputs = [
-                  (pkgs.python3.withPackages (ps: [ ps.aiohttp ]))
-                  pkgs.vestaforge-control
+                  pkgs.python3
+                  pkgs.mish-control
                 ];
               }
               ''
-                export VESTAFORGE_STATE_DIR="$TMPDIR/state"
-                vfctl --state-dir "$VESTAFORGE_STATE_DIR" status > "$TMPDIR/status.json"
-                vfctl --state-dir "$VESTAFORGE_STATE_DIR" waypoint add-simulated \
+                export MISH_STATE_DIR="$TMPDIR/state"
+                mish --state-dir "$MISH_STATE_DIR" status > "$TMPDIR/status.json"
+                mish --state-dir "$MISH_STATE_DIR" waypoint add-simulated \
                   --id wp-cli \
                   --lat 44.0521 \
                   --lon -123.0868 \
                   --label "CLI waypoint" \
                   --visibility public > "$TMPDIR/wp1.json"
-                vfctl --state-dir "$VESTAFORGE_STATE_DIR" waypoint add-simulated \
+                mish --state-dir "$MISH_STATE_DIR" waypoint add-simulated \
                   --id wp-cli \
                   --lat 44.0521 \
                   --lon -123.0868 \
                   --label "CLI waypoint" \
                   --visibility public > "$TMPDIR/wp2.json"
-                vfctl --state-dir "$VESTAFORGE_STATE_DIR" waypoint list > "$TMPDIR/waypoints.json"
-                vfctl --state-dir "$VESTAFORGE_STATE_DIR" geopack create \
+                mish --state-dir "$MISH_STATE_DIR" waypoint list > "$TMPDIR/waypoints.json"
+                mish --state-dir "$MISH_STATE_DIR" geopack create \
                   --id pack-cli \
                   --name "CLI Pack" \
                   --waypoint wp-cli \
                   --visibility public > "$TMPDIR/pack.json"
-                vfctl --state-dir "$VESTAFORGE_STATE_DIR" geopack publish \
+                mish --state-dir "$MISH_STATE_DIR" geopack publish \
                   --pack pack-cli \
                   --relay mock://check > "$TMPDIR/publication.json"
-                vfctl --state-dir "$VESTAFORGE_STATE_DIR" identity bootstrap-operator > "$TMPDIR/operator.json"
-                export VESTAFORGE_CATALOG_PATH=${../catalog/vestaforge-catalog.json}
-                export VESTAFORGE_QUEUE_SCRIPT_PATH=${../.github/scripts/queue_prs.py}
-                PYTHONPATH=${../apps/vfctl/src} python3 -m unittest discover -s ${../tests}
+                mish --state-dir "$MISH_STATE_DIR" identity bootstrap-operator > "$TMPDIR/operator.json"
+                export MISH_CATALOG_PATH=${../catalog/mish-catalog.json}
+                export MISH_QUEUE_SCRIPT_PATH=${../.github/scripts/queue_prs.py}
+                python3 -m unittest discover -s ${../tests} -p test_merge_queue.py
                 touch "$out"
               '';
 
           service-config =
-            pkgs.runCommand "vestaforge-service-config-check"
+            pkgs.runCommand "mish-service-config-check"
               {
-                controlUser = profileConfig.systemd.services.vestaforge-control.serviceConfig.User;
-                controlReadWritePath = builtins.elemAt profileConfig.systemd.services.vestaforge-control.serviceConfig.ReadWritePaths 0;
+                controlUser = profileConfig.systemd.services.mish-control.serviceConfig.User;
+                controlReadWritePath = builtins.elemAt profileConfig.systemd.services.mish-control.serviceConfig.ReadWritePaths 0;
                 matrixService =
-                  if !profileConfig.services.vestaforge.matrix.enable then
+                  if !profileConfig.services.mish.matrix.enable then
                     "disabled"
-                  else if profileConfig.services.vestaforge.matrix.provider == "conduit" then
-                    profileConfig.systemd.services.vestaforge-matrix-conduit.serviceConfig.User
+                  else if profileConfig.services.mish.matrix.provider == "conduit" then
+                    profileConfig.systemd.services.mish-matrix-conduit.serviceConfig.User
                   else
-                    profileConfig.systemd.services.vestaforge-matrix-tuwunel.serviceConfig.User;
+                    profileConfig.systemd.services.mish-matrix-tuwunel.serviceConfig.User;
                 matrixReleaseGated =
                   if profileConfig.den.quirks.meshServices.control.matrixReleaseGated then "1" else "0";
                 openzitiMfa =
@@ -418,10 +421,10 @@ in
                     "0";
               }
               ''
-                test "$controlUser" = "vestaforge"
+                test "$controlUser" = "mish"
                 test "$matrixService" = "disabled"
                 test "$matrixReleaseGated" = "1"
-                test "$controlReadWritePath" = "/var/lib/vestaforge"
+                test "$controlReadWritePath" = "/var/lib/mish"
                 test "$openzitiMfa" = "0"
                 test "$publicationPublicOnly" = "0"
                 touch "$out"
@@ -440,54 +443,54 @@ in
         in
         {
           schema =
-            pkgs.runCommand "vestaforge-schema-check"
+            pkgs.runCommand "mish-schema-check"
               {
-                nativeBuildInputs = [ pkgs.vestaforge-control ];
+                nativeBuildInputs = [ pkgs.mish-control ];
               }
               ''
-                vfctl internal-check-schemas \
+                mish internal-check-schemas \
                   --schemas ${../schemas} \
                   --examples ${../examples} \
-                  --catalog ${../catalog/vestaforge-catalog.json}
+                  --catalog ${../catalog/mish-catalog.json}
                 touch "$out"
               '';
 
           cli =
-            pkgs.runCommand "vestaforge-cli-check"
+            pkgs.runCommand "mish-cli-check"
               {
                 nativeBuildInputs = [
-                  (pkgs.python3.withPackages (ps: [ ps.aiohttp ]))
-                  pkgs.vestaforge-control
+                  pkgs.python3
+                  pkgs.mish-control
                 ];
               }
               ''
-                export VESTAFORGE_STATE_DIR="$TMPDIR/state"
-                vfctl --state-dir "$VESTAFORGE_STATE_DIR" status > "$TMPDIR/status.json"
-                vfctl --state-dir "$VESTAFORGE_STATE_DIR" waypoint add-simulated \
+                export MISH_STATE_DIR="$TMPDIR/state"
+                mish --state-dir "$MISH_STATE_DIR" status > "$TMPDIR/status.json"
+                mish --state-dir "$MISH_STATE_DIR" waypoint add-simulated \
                   --id wp-cli \
                   --lat 44.0521 \
                   --lon -123.0868 \
                   --label "CLI waypoint" \
                   --visibility public > "$TMPDIR/wp1.json"
-                vfctl --state-dir "$VESTAFORGE_STATE_DIR" waypoint add-simulated \
+                mish --state-dir "$MISH_STATE_DIR" waypoint add-simulated \
                   --id wp-cli \
                   --lat 44.0521 \
                   --lon -123.0868 \
                   --label "CLI waypoint" \
                   --visibility public > "$TMPDIR/wp2.json"
-                vfctl --state-dir "$VESTAFORGE_STATE_DIR" waypoint list > "$TMPDIR/waypoints.json"
-                vfctl --state-dir "$VESTAFORGE_STATE_DIR" geopack create \
+                mish --state-dir "$MISH_STATE_DIR" waypoint list > "$TMPDIR/waypoints.json"
+                mish --state-dir "$MISH_STATE_DIR" geopack create \
                   --id pack-cli \
                   --name "CLI Pack" \
                   --waypoint wp-cli \
                   --visibility public > "$TMPDIR/pack.json"
-                vfctl --state-dir "$VESTAFORGE_STATE_DIR" geopack publish \
+                mish --state-dir "$MISH_STATE_DIR" geopack publish \
                   --pack pack-cli \
                   --relay mock://check > "$TMPDIR/publication.json"
-                vfctl --state-dir "$VESTAFORGE_STATE_DIR" identity bootstrap-operator > "$TMPDIR/operator.json"
-                export VESTAFORGE_CATALOG_PATH=${../catalog/vestaforge-catalog.json}
-                export VESTAFORGE_QUEUE_SCRIPT_PATH=${../.github/scripts/queue_prs.py}
-                PYTHONPATH=${../apps/vfctl/src} python3 -m unittest discover -s ${../tests}
+                mish --state-dir "$MISH_STATE_DIR" identity bootstrap-operator > "$TMPDIR/operator.json"
+                export MISH_CATALOG_PATH=${../catalog/mish-catalog.json}
+                export MISH_QUEUE_SCRIPT_PATH=${../.github/scripts/queue_prs.py}
+                python3 -m unittest discover -s ${../tests} -p test_merge_queue.py
                 touch "$out"
               '';
         };

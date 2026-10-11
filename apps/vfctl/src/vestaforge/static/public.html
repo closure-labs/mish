@@ -1,3 +1,0 @@
-<!doctype html><html lang="en"><meta charset="utf-8"><meta name="viewport" content="width=device-width"><title>Event announcements</title><h1>Official event announcements</h1><main id="feed" aria-live="polite"></main><script>
-async function refresh(){try{const r=await fetch('/public/announcements');const v=await r.json();const feed=document.getElementById('feed');feed.replaceChildren();for(const item of v.announcements){const p=document.createElement('p');p.textContent=new Date(item.published*1000).toLocaleString()+': '+item.text;feed.append(p);}}catch(e){document.getElementById('feed').textContent='Connection unavailable';}}refresh();setInterval(refresh,10000);
-</script></html>

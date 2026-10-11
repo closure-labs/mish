@@ -39,8 +39,59 @@ Beads is unavailable in this environment; this file records phase tasks.
   [run 38173802058](https://github.com/closure-labs/mish/actions/runs/38173802058);
   [PR #8](https://github.com/closure-labs/mish/pull/8) merged as `fb6db84`.
 
-End-to-end automatic admission is exercised by the verification-record PR,
-intentionally opened without manual queue enrollment. Its Actions and PR
-timeline record whether the installed workflow admits the validated head.
+End-to-end automatic admission was exercised by
+[PR #9](https://github.com/closure-labs/mish/pull/9), opened without manual
+queue enrollment. [Merge queue run 38174507668](https://github.com/closure-labs/mish/actions/runs/38174507668)
+admitted its validated head and explicitly dispatched
+[queue Checks run 38174603025](https://github.com/closure-labs/mish/actions/runs/38174603025)
+for the combined commit.
+
+That dispatched run passed, but its check suite was not associated with the
+queue commit's GraphQL status rollup, so it did not complete the queue gate.
+The durable correction merged in [PR #13](https://github.com/closure-labs/mish/pull/13):
+repository-scoped GitHub App authentication and native `merge_group` events.
+App registration/installation and the documented Actions variable/secret are
+an outstanding configuration dependency; no personal token is stored in CI.
 
 Physical M2–M5 gates remain open. This task does not publish or deploy a release.
+
+## Mish rebrand
+
+- [x] User-approved scope: use Mish internally and externally before the first
+  deployment. Rename CLI, Python package, Nix/module/image identifiers,
+  service users, runtime paths, environment variables, catalog and schemas.
+- [x] Implementation: one consistent namespace; commissioning, recovery,
+  workflow targets and regressions follow the new interfaces.
+- [x] Documentation: benefit-led README and operator/developer entry points;
+  current capabilities and future concepts remain grounded in evidence.
+- [x] Independent review: infrastructure interface consistency and docs claims.
+- [x] Local QA: all 43 Python tests, all-system evaluation and native x86 checks
+  passed, including the booted Mish VM and snapshot-recovery scenario.
+- [x] Native rebrand checks passed at `ec0dd6a`; the complete rebrand is
+  consolidated in Rust [PR #14](https://github.com/closure-labs/mish/pull/14).
+  Superseded PR #10 is closed; delivery follows the current Rust gate.
+
+## Rust-native coordinator
+
+- [x] User-approved scope and Codex Overkill comparison:
+  `docs/rust-architecture.md`; one coordinator remains authoritative.
+- [x] Implementation: validated domain types, bounded typed command mailbox,
+  dedicated SQLite thread, Axum/Clap adapters and native USB serial framing.
+  The appliance package contains no Python runtime.
+- [x] Preserve commissioning, staff tokens, alerts/ACKs, private/public
+  projections, legacy opt-in content commands and snapshot no-replay recovery.
+- [x] Independent security review: no P0/P1 blockers. Corrected browser request
+  payloads, SIGTERM lifecycle and journal polling N+1 queries.
+- [x] Cargo behavioral tests and strict Clippy pass; all-system Nix evaluation
+  passes. Final realized package/VM and GitHub checks follow the frozen revision.
+- [x] Local native package/VM: 38 Rust tests, strict formatting/Clippy,
+  CLI/schema/workflow/module checks and booted HTTPS/restart/recovery scenario
+  passed for application source `c04f529`. Runtime closure contains no Python.
+- [x] Native x86 and ARM GitHub checks passed on `1d7d68d` in
+  [run 38177392268](https://github.com/closure-labs/mish/actions/runs/38177392268).
+  Final evidence-only revision repeats both required checks.
+- [x] Committed and pushed Rust implementation `a6e4fb8` with follow-up
+  coordinate parsing and current-main merges; [PR #14](https://github.com/closure-labs/mish/pull/14).
+- [ ] Successful native checks and merge-queue delivery of final Rust revision.
+
+Physical hardware and field-pilot acceptance remain open.

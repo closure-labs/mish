@@ -10,7 +10,7 @@
     "visibility": "public"
   },
   "signature": "hmac-sha256:2222222222222222222222222222222222222222222222222222222222222222",
-  "signer": "vf:example",
+  "signer": "mish:example",
   "version": "0.1",
   "waypointIds": ["wp-public-example"]
 }

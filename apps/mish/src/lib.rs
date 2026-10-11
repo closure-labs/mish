@@ -1,0 +1,25 @@
+//! Mish: one authoritative offline event coordinator.
+
+pub mod appliance;
+pub mod coordinator;
+pub mod domain;
+pub mod radio;
+pub mod recovery;
+pub mod server;
+pub mod storage;
+pub mod validation;
+
+#[derive(Debug)]
+pub struct InputError(pub String);
+
+impl std::fmt::Display for InputError {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        self.0.fmt(f)
+    }
+}
+
+impl std::error::Error for InputError {}
+
+pub fn invalid(message: impl Into<String>) -> anyhow::Error {
+    InputError(message.into()).into()
+}
