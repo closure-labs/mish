@@ -17,10 +17,6 @@ jobs:
        github.event.workflow_run.event == 'pull_request')
     runs-on: ubuntu-24.04
     timeout-minutes: 10
-    permissions:
-      contents: write
-      pull-requests: write
-      actions: write
     steps:
       - name: Check out trusted queue automation
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
@@ -28,7 +24,26 @@ jobs:
           ref: main
           persist-credentials: false
       - uses: cachix/install-nix-action@13d8dd58da0234aa297dedd986986ccb8e7f3e24
+      - name: Validate GitHub App configuration
+        env:
+          MISH_QUEUE_APP_ID: ${{ vars.MISH_QUEUE_APP_ID }}
+          MISH_QUEUE_APP_PRIVATE_KEY: ${{ secrets.MISH_QUEUE_APP_PRIVATE_KEY }}
+        run: nix develop --accept-flake-config --command python .github/scripts/queue_prs.py --check-configuration
+      - name: Create repository-scoped queue token
+        id: queue-token
+        uses: actions/create-github-app-token@bcd2ba49218906704ab6c1aa796996da409d3eb1
+        with:
+          app-id: ${{ vars.MISH_QUEUE_APP_ID }}
+          private-key: ${{ secrets.MISH_QUEUE_APP_PRIVATE_KEY }}
+          owner: ${{ github.repository_owner }}
+          repositories: ${{ github.event.repository.name }}
+          permission-actions: read
+          permission-checks: read
+          permission-contents: write
+          permission-pull-requests: write
+          permission-merge-queues: write
       - name: Queue current validated PR heads
         env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GH_TOKEN: ${{ steps.queue-token.outputs.token }}
+          MISH_QUEUE_AUTH: github-app
         run: nix develop --accept-flake-config --command python .github/scripts/queue_prs.py
