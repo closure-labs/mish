@@ -209,7 +209,7 @@ class MishStore:
 
     def signer(self) -> str:
         key = self._read_signing_key()
-        return "vf:" + hashlib.sha256(key).hexdigest()[:32]
+        return "mish:" + hashlib.sha256(key).hexdigest()[:32]
 
     def _signature(self, value: Any) -> str:
         key = self._read_signing_key()

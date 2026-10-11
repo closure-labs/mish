@@ -58,6 +58,6 @@
   },
   "signature": "hmac-sha256:catalog-alpha-placeholder",
   "signedAt": "2026-06-22T00:00:00Z",
-  "signer": "vf:catalog-alpha",
+  "signer": "mish:catalog-alpha",
   "version": "0.1"
 }
