@@ -14,6 +14,14 @@ qualification = importlib.util.module_from_spec(spec)
 spec.loader.exec_module(qualification)
 
 
+def writable_policy_copy(root):
+    destination = root / '.github'
+    shutil.copytree(ROOT / '.github', destination)
+    # Nix store inputs are read-only. Mutate only this owned temporary copy.
+    for path in [destination, *destination.rglob('*')]:
+        path.chmod(0o700 if path.is_dir() else 0o600)
+
+
 class QualificationTests(unittest.TestCase):
     def test_repository_policy_matches_actual_workflow_dependencies(self):
         qualification.validate_policy(ROOT)
@@ -43,7 +51,7 @@ class QualificationTests(unittest.TestCase):
     def test_workflow_dependency_drift_is_rejected(self):
         with tempfile.TemporaryDirectory() as directory:
             root = Path(directory)
-            shutil.copytree(ROOT / '.github', root / '.github')
+            writable_policy_copy(root)
             path = root / '.github/workflows/ci.yml'
             path.write_text(path.read_text().replace('needs: qualify', 'needs: []', 1))
             with self.assertRaisesRegex(ValueError, 'dependencies differ'):
@@ -53,7 +61,7 @@ class QualificationTests(unittest.TestCase):
         for replacement in ['if: false', 'if: success()']:
             with self.subTest(replacement=replacement), tempfile.TemporaryDirectory() as directory:
                 root = Path(directory)
-                shutil.copytree(ROOT / '.github', root / '.github')
+                writable_policy_copy(root)
                 path = root / '.github/workflows/ci.yml'
                 path.write_text(path.read_text().replace('if: always()', replacement, 1))
                 with self.assertRaises(ValueError):
