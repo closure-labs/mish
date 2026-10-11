@@ -1,0 +1,14 @@
+{
+  "name": "Mish merge queue",
+  "url": "https://github.com/closure-labs/mish",
+  "public": false,
+  "hook_attributes": { "active": false },
+  "default_events": [],
+  "default_permissions": {
+    "actions": "read",
+    "checks": "read",
+    "contents": "write",
+    "pull_requests": "write",
+    "merge_queues": "write"
+  }
+}
