@@ -8,6 +8,11 @@ source checkout and required Nix closures before entering an offline venue.
 Internet may be used for preparation; event operation must work with WAN
 unplugged. The installer is not an unattended disk installer.
 
+The [channel-enrollment workflow](channel-enrollment.md) is being implemented.
+Its selected create/join/deploy/export commands require feature-specific
+software evidence before use on hardware; earlier VM results do not qualify
+channel provisioning.
+
 ## Kit and network
 
 Use one x86_64 mini-PC, reliable local storage and power, a USB Meshtastic
@@ -18,11 +23,13 @@ Connect the coordinator by Ethernet and staff/attendee browsers by Wi-Fi.
 Disable WAN for the acceptance procedure. Ensure devices can resolve local DNS
 and reach TCP 443 even when internet connectivity is absent.
 
-The shared image contains no operator token or private staff channel key.
-Configure all staff radios with the same appropriate regional radio settings,
-modem preset and private channel in the Meshtastic client. Choose the staff
-channel index deliberately; the adapter uses an index, not a channel key. Do
-not commit channel keys to the repository or put them in Nix expressions.
+The shared image contains no operator token or private channel key. Choose
+whether to join an existing community mesh or prepare a named event mesh with
+one community primary and private staff/department secondaries. Imported
+configurations preserve LoRa settings; generated plans inspect the attached
+radio before explicit deployment. Check regulatory region and modem settings
+on the actual radios. Do not commit channel keys to the repository or put them
+in Nix expressions.
 
 ## Prepare and install x86
 
@@ -88,7 +95,7 @@ The QEMU mini-PC host is a VM definition and is deliberately not imported here.
             radio.meshtastic = {
               enable = true;
               device = "/dev/serial/by-id/REPLACE-WITH-THE-RADIO";
-              channel = 0;
+              channel = 1; # Example staff secondary; verify the deployed slot layout.
             };
           };
           system.stateVersion = "26.05";
@@ -149,8 +156,20 @@ journalctl -u mish-control -n 100
 Replace the placeholder device in the physical configuration, rebuild and
 activate it. The service user must have explicit serial device access; the
 module's USB option supplies the service's serial group membership. Verify
-that the configured radio is connected on the selected private staff channel.
+the deployed community and private slot layout before selecting a staff
+channel. Public community membership permits transmission, while private staff
+and department membership uses separate keys.
 Do not use `/dev/ttyUSB0` as a persistent commissioning identifier.
+
+Stop `mish-control` before a CLI command inspects or provisions the USB radio.
+Use `mish channels create` for a named mesh or `mish channels join` for a
+single PRIMARY community URI. Both store an unverified plan after inspecting
+the device; neither is a deployment. Review `mish channels list`, then use the
+explicit `mish channels deploy` operation with a private recovery-file path.
+Verified readback marks the configuration deployed; reconnect is never a
+configuration write. Export requires verified configuration and its LoRa
+snapshot. The full selected CLI examples and failure gates are in
+[channel-enrollment.md](channel-enrollment.md).
 
 With local access enabled, Caddy serves `https://mish.home.arpa` using its
 internal CA. At the console, locate the generated root certificate; the usual
@@ -183,9 +202,21 @@ enroll a replacement operator first. A CLI user with access to appliance state i
 access; HTTP roles are enforced for browser requests. Do not share a staff
 credential to simulate two identities.
 
+Web enrollment is independent of radio enrollment. Assign department access
+explicitly with `mish channels grant --staff-id <ID> --channel department-medical`
+for a Medical member, then distribute that authorized department's private QR.
+Department IDs use lowercase alphanumeric slugs; conflicting IDs are rejected.
+The department QR contains community plus the selected department, without
+other staff/department keys. `mish channels revoke` withdraws web-channel
+membership but cannot invalidate a copied radio PSK. Rotate the affected key
+and re-enroll the remaining radios when RF access must be removed.
+
 Open `https://mish.home.arpa/staff` on both devices and enter their individual
 tokens. Browser credentials are held in memory; re-enter after a reload.
-Send a short message from Alice, verify Bob sees it, and reply. Create an alert
+Send a short message on their authorized staff channel, verify the other
+member sees it, and reply. Channel-aware message and alert requests default
+to `staff`; department traffic must select its intended authorized channel.
+Verify membership-filtered reads before using sensitive traffic. Create an alert
 with an accountable responder; the browser currently sets expiration to one
 hour. Acknowledge from Bob's browser.
 Record its short ID and ask a radio user to send `ACK <ID>` on the private
@@ -197,7 +228,6 @@ Operator CLI equivalents are available for local recovery:
 ```bash
 sudo -u mish mish --config /etc/mish/config.json message --author 'Event operator' --text 'Staff check-in'
 sudo -u mish mish --config /etc/mish/config.json messages
-sudo -u mish mish --config /etc/mish/config.json announce --text 'Water station is open'
 ```
 
 `alert` takes `--text`, `--author`, `--responder`, `--expires` (Unix epoch time
@@ -213,10 +243,18 @@ operator review; do not equate it with failure or automatically resend it.
 There is no retry command for uncertain records: check radio receipt first, then
 create a replacement message deliberately if needed.
 
-Open `/public` with no token to verify the announcement. Publishing writes a
-separate public text/metadata projection; it does not expose the private source
-message, staff identity, location or unpublished alert. The operator can publish
-chosen announcement wording independently of staff conversations.
+Open `/public` without a token to verify the community enrollment landing page.
+Decode its QR independently and confirm it contains community configuration
+only. That key intentionally permits community radio transmission; the page
+does not grant anonymous browser messaging or private staff access. Verify a
+private department export as an authorized member and reject it for an
+unauthorized identity. QR exports and prior-radio recovery files use mode
+`0600`; publish only the community artifact. The CLI must not dump private
+enrollment URLs to the console.
+
+The earlier `announce` CLI and announcement HTTP routes remain deprecated
+compatibility facilities. They do not define community enrollment or replace
+the new participatory radio model.
 
 ## Backup, restore and spare activation
 
@@ -234,7 +272,8 @@ and enrolled credential hashes. It does not include the complete appliance:
 separately back up `/etc/nixos` and its lockfile/hardware configuration,
 `/var/lib/caddy` (including private CA material), any configured runtime
 credential files and legacy Mish state/keys if used. Export the radio's
-configuration separately and protect its private channel key. Protect all
+configuration and any prior-radio recovery file separately; protect private
+keys, department QR exports and membership records. Protect all
 backup media as private event data.
 
 To restore, keep the old coordinator stopped before activating a spare. Copy
@@ -269,7 +308,8 @@ ordinary restart of the same database continues draining its pending queue.
 
 Restore the corresponding local config and CA data while Caddy is stopped,
 preserving their owners/modes. Start Caddy and `mish-control`, verify
-authenticated staff history and public feed, and check radio status before
+authenticated channel membership/history and the public community enrollment
+surface, and check radio status before
 sending a new test message. Credentials from that backup remain valid;
 revoke/re-enroll any exposed identity. A spare must reuse the LAN/DNS address
 deliberately and only one coordinator is active at a time. Retain the previous

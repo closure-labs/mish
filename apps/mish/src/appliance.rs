@@ -59,6 +59,17 @@ pub fn initialize_schema(db: &Connection) -> Result<()> {
     )? {
         db.execute_batch("ALTER TABLE received ADD COLUMN created REAL DEFAULT 0")?;
     }
+    for (column, definition) in [
+        ("channel_id", "TEXT NOT NULL DEFAULT 'staff'"),
+        ("channel_fingerprint", "TEXT"),
+    ] {
+        if !columns.iter().any(|existing| existing == column) {
+            db.execute_batch(&format!(
+                "ALTER TABLE records ADD COLUMN {column} {definition}"
+            ))?;
+        }
+    }
+    crate::channel_store::initialize_channel_schema(db)?;
     Ok(())
 }
 
@@ -98,6 +109,8 @@ fn record_row(row: &Row<'_>) -> rusqlite::Result<Record> {
     let uncertain_at = row.get("uncertain_at")?;
     let expires: Option<f64> = row.get("expires")?;
     Ok(Record {
+        channel_id: row.get("channel_id")?,
+        channel_fingerprint: row.get("channel_fingerprint")?,
         id: row.get("id")?,
         text: row.get("text")?,
         kind: enum_column(row, "kind")?,
@@ -251,6 +264,11 @@ impl EventStore {
     }
 
     pub fn create(&self, record: NewRecord) -> Result<Record> {
+        let binding = self.channel_metadata(&record.channel_id)?;
+        if binding.is_none() && !(record.channel_id == "staff" && self.radio_channels()?.is_empty())
+        {
+            return Err(invalid("unknown message channel"));
+        }
         // Validate time again at durable acceptance, after a command may have waited in the actor queue.
         if record.kind != MessageKind::Message {
             let timestamp = now();
@@ -280,7 +298,7 @@ impl EventStore {
                 break candidate;
             }
         };
-        transaction.execute("INSERT INTO records(id,text,kind,author,created,expires,responder,state,packet_id) VALUES(?,?,?,?,?,?,?,'queued',NULL)", params![id, record.text.as_str(), record.kind.as_str(), record.author, now(), record.expires, record.responder.as_ref().map(StaffName::as_str)])?;
+        transaction.execute("INSERT INTO records(id,text,kind,author,created,expires,responder,state,packet_id,channel_id,channel_fingerprint) VALUES(?,?,?,?,?,?,?,'queued',NULL,?,?)", params![id, record.text.as_str(), record.kind.as_str(), record.author, now(), record.expires, record.responder.as_ref().map(StaffName::as_str),record.channel_id,binding.map(|b| b.fingerprint)])?;
         transaction.commit()?;
         self.record(&id)?
             .ok_or_else(|| anyhow::anyhow!("accepted record disappeared"))
@@ -298,14 +316,33 @@ impl EventStore {
     }
 
     pub fn records(&self) -> Result<Vec<Record>> {
+        self.records_in(None)
+    }
+    fn records_in(&self, channels: Option<&[String]>) -> Result<Vec<Record>> {
         let mut db = self.connect()?;
         // The journal and its ACKs are one read snapshot, using one connection
         // and two queries regardless of the number of returned records.
         let transaction = db.transaction()?;
         let mut records = {
-            let mut statement = transaction.prepare("SELECT r.*,COALESCE(s.name,r.author) AS author_name FROM records r LEFT JOIN staff s ON r.author=s.id ORDER BY r.created DESC LIMIT 500")?;
+            let filter = channels
+                .map(|ids| {
+                    format!(
+                        " WHERE r.channel_id IN ({})",
+                        vec!["?"; ids.len()].join(",")
+                    )
+                })
+                .unwrap_or_default();
+            let priority = if channels.is_some() {
+                "(r.channel_id='community') ASC,"
+            } else {
+                ""
+            };
+            let mut statement = transaction.prepare(&format!("SELECT r.*,COALESCE(s.name,r.author) AS author_name FROM records r LEFT JOIN staff s ON r.author=s.id{filter} ORDER BY {priority} r.created DESC LIMIT 500"))?;
             statement
-                .query_map([], record_row)?
+                .query_map(
+                    rusqlite::params_from_iter(channels.unwrap_or(&[])),
+                    record_row,
+                )?
                 .collect::<rusqlite::Result<Vec<_>>>()?
         };
         let positions: std::collections::HashMap<_, _> = records
@@ -333,6 +370,30 @@ impl EventStore {
         Ok(records)
     }
 
+    pub fn records_for(&self, actor: &StaffIdentity) -> Result<Vec<Record>> {
+        let mut channels: Vec<_> = self
+            .channel_catalog(Some(actor))?
+            .into_iter()
+            .map(|channel| channel.id)
+            .collect();
+        if self.radio_channels()?.is_empty() && self.can_access(actor, "staff")? {
+            channels.push("staff".into());
+        }
+        if channels.is_empty() {
+            return Ok(Vec::new());
+        }
+        self.records_in(Some(&channels))
+    }
+
+    pub fn create_as(&self, actor: &StaffIdentity, value: NewRecord) -> Result<Record> {
+        self.authorize_channel(actor, &value.channel_id)?;
+        self.create(value)
+    }
+    pub fn records_for_channel(&self, actor: &StaffIdentity, id: &str) -> Result<Vec<Record>> {
+        self.authorize_channel(actor, id)?;
+        self.records_in(Some(&[id.to_owned()]))
+    }
+
     pub fn acknowledge(
         &self,
         id: &str,
@@ -342,6 +403,28 @@ impl EventStore {
         channel: Option<i64>,
     ) -> Result<Acknowledgement> {
         RecordId::new(id)?;
+        if source == AcknowledgementSource::Browser && !self.radio_channels()?.is_empty() {
+            let identity = self
+                .connect()?
+                .query_row(
+                    "SELECT id,name,role FROM staff WHERE id=?",
+                    [actor],
+                    |row| {
+                        Ok(StaffIdentity {
+                            id: row.get(0)?,
+                            name: row.get(1)?,
+                            role: enum_column(row, "role")?,
+                        })
+                    },
+                )
+                .optional()?;
+            if let Some(identity) = identity {
+                let record = self.record(id)?.ok_or_else(|| invalid("alert not found"))?;
+                self.authorize_channel(&identity, &record.channel_id)?;
+            } else {
+                return Err(invalid("staff identity required"));
+            }
+        }
         let mut db = self.connect()?;
         let transaction = db.transaction_with_behavior(TransactionBehavior::Immediate)?;
         let record = transaction
@@ -403,6 +486,8 @@ impl EventStore {
             statement
                 .query_map([], |row| {
                     Ok(PendingRecord {
+                        channel_id: row.get("channel_id")?,
+                        channel_fingerprint: row.get("channel_fingerprint")?,
                         id: row.get("id")?,
                         text: row.get("text")?,
                         kind: enum_column(row, "kind")?,
@@ -472,6 +557,14 @@ impl EventStore {
     }
 
     pub fn receive(&self, packet_id: &str, node: &str, text: &str, channel: i64) -> Result<bool> {
+        let mapping = self.route_radio_channel(
+            u32::try_from(channel).map_err(|_| invalid("invalid radio channel"))?,
+        )?;
+        let registry = self.radio_channels()?;
+        if !registry.is_empty() && !mapping.as_ref().is_some_and(|b| b.verified) {
+            return Ok(false);
+        }
+        let channel_id = mapping.as_ref().map(|b| b.id.as_str()).unwrap_or("staff");
         let text = RadioText::new(text)?;
         let text = text.as_str();
         let mut db = self.connect()?;
@@ -487,8 +580,8 @@ impl EventStore {
             let id = identity.trim().to_uppercase();
             let record = transaction
                 .query_row(
-                    "SELECT kind,expires FROM records WHERE id=?",
-                    [&id],
+                    "SELECT kind,expires FROM records WHERE id=? AND channel_id=?",
+                    params![id, channel_id],
                     |row| Ok((row.get::<_, String>(0)?, row.get::<_, Option<f64>>(1)?)),
                 )
                 .optional()?;
@@ -501,7 +594,7 @@ impl EventStore {
                 )?;
             }
         } else {
-            transaction.execute("INSERT INTO records(id,text,kind,author,created,expires,responder,state,packet_id) VALUES(?,?,'message',?,?,NULL,NULL,'received',?)", params![format!("RF-{}", random_hex(8)?), text, format!("radio:{node}:channel:{channel}"), now(), packet_id])?;
+            transaction.execute("INSERT INTO records(id,text,kind,author,created,expires,responder,state,packet_id,channel_id,channel_fingerprint) VALUES(?,?,'message',?,?,NULL,NULL,'received',?,?,?)", params![format!("RF-{}", random_hex(8)?), text, format!("radio:{node}:channel:{channel}"), now(), packet_id,channel_id,mapping.as_ref().map(|b| &b.fingerprint)])?;
         }
         transaction.commit()?;
         Ok(true)

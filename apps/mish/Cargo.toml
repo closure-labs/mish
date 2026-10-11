@@ -4,7 +4,7 @@ version = "0.1.0-alpha"
 edition = "2024"
 rust-version = "1.85"
 license = "Apache-2.0"
-description = "Offline event coordination with private staff messaging and explicit announcements"
+description = "Offline event coordination with community and private Meshtastic channels"
 repository = "https://github.com/closure-labs/mish"
 
 [dependencies]
@@ -16,6 +16,7 @@ clap = { version = "4.5", features = ["derive"] }
 hex = "0.4"
 hmac = "0.13"
 prost = "=0.14.4"
+qrcode = { version = "0.14.1", default-features = false, features = ["svg"] }
 rand = "0.10"
 reqwest = { version = "0.12", default-features = false, features = ["json", "rustls-tls"] }
 rusqlite = { version = "0.40", features = ["backup"] }

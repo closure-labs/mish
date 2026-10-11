@@ -1,9 +1,9 @@
-//! Typed HTTP boundary: staff credentials and the attendee projection never share a route.
+//! Typed HTTP boundary for scoped staff coordination and community enrollment.
 use crate::{InputError, coordinator::Coordinator, domain::*};
 use axum::{
     Json, Router,
     body::Body,
-    extract::{DefaultBodyLimit, Path, State},
+    extract::{DefaultBodyLimit, Path, Query, State},
     http::{Request, StatusCode},
     middleware::{self, Next},
     response::{Html, IntoResponse, Response},
@@ -70,7 +70,7 @@ async fn headers(request: Request<Body>, next: Next) -> Response {
     let headers = response.headers_mut();
     headers.insert("cache-control", "no-store".parse().unwrap());
     headers.insert("x-content-type-options", "nosniff".parse().unwrap());
-    headers.insert("content-security-policy", "default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; frame-ancestors 'none'".parse().unwrap());
+    headers.insert("content-security-policy", "default-src 'self'; img-src 'self' data:; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; frame-ancestors 'none'".parse().unwrap());
     response
 }
 fn operator(actor: &StaffIdentity) -> Result<(), ApiError> {
@@ -97,11 +97,18 @@ fn parse<T: serde::de::DeserializeOwned>(
 #[serde(deny_unknown_fields)]
 struct MessageRequest {
     text: MessageText,
+    #[serde(default = "default_channel")]
+    channel: RecordId,
+}
+fn default_channel() -> RecordId {
+    RecordId::new("staff").unwrap()
 }
 #[derive(Deserialize)]
 #[serde(deny_unknown_fields)]
 struct AlertRequest {
     text: MessageText,
+    #[serde(default = "default_channel")]
+    channel: RecordId,
     responder: StaffName,
     expires: f64,
     #[serde(default = "alert_kind")]
@@ -132,6 +139,12 @@ async fn health(State(state): State<AppState>) -> Json<serde_json::Value> {
 async fn staff_page() -> Html<&'static str> {
     Html(include_str!("../static/staff.html"))
 }
+async fn channel_selection_script() -> impl IntoResponse {
+    (
+        [("content-type", "application/javascript; charset=utf-8")],
+        include_str!("../static/channel-selection.js"),
+    )
+}
 async fn public_page() -> Html<&'static str> {
     Html(include_str!("../static/public.html"))
 }
@@ -145,8 +158,26 @@ async fn status(State(state): State<AppState>) -> Json<serde_json::Value> {
         json!({"radio":state.radio_status.lock().map(|v| v.clone()).unwrap_or_else(|_| "unavailable".into()),"adapter":state.adapter}),
     )
 }
-async fn messages(State(state): State<AppState>) -> Result<Json<serde_json::Value>, ApiError> {
-    Ok(Json(json!({"messages":state.coordinator.records().await?})))
+async fn messages(
+    State(state): State<AppState>,
+    axum::Extension(actor): axum::Extension<StaffIdentity>,
+    Query(query): Query<MessageQuery>,
+) -> Result<Json<serde_json::Value>, ApiError> {
+    let records = match query.channel {
+        Some(id) => {
+            state
+                .coordinator
+                .records_for_channel(actor, id.as_str())
+                .await?
+        }
+        None => state.coordinator.records_for(actor).await?,
+    };
+    Ok(Json(json!({"messages":records})))
+}
+#[derive(Deserialize)]
+#[serde(deny_unknown_fields)]
+struct MessageQuery {
+    channel: Option<RecordId>,
 }
 async fn message(
     State(state): State<AppState>,
@@ -159,7 +190,11 @@ async fn message(
         Json(
             state
                 .coordinator
-                .create(NewRecord::message(value.text, actor.id)?)
+                .create_as(
+                    actor.clone(),
+                    NewRecord::message(value.text, &actor.id)?
+                        .on_channel(value.channel.as_str())?,
+                )
                 .await?,
         ),
     ))
@@ -178,15 +213,16 @@ async fn alert(
     }
     let record = NewRecord::alert(
         value.text,
-        actor.id,
+        &actor.id,
         value.responder,
         value.expires,
         value.kind == MessageKind::Urgent,
         crate::appliance::now(),
-    )?;
+    )?
+    .on_channel(value.channel.as_str())?;
     Ok((
         StatusCode::CREATED,
-        Json(state.coordinator.create(record).await?),
+        Json(state.coordinator.create_as(actor, record).await?),
     ))
 }
 async fn acknowledge(
@@ -246,6 +282,68 @@ async fn publish(
         StatusCode::CREATED,
         Json(state.coordinator.publish(value.text.as_str()).await?),
     ))
+}
+
+async fn channel_catalog(
+    State(state): State<AppState>,
+    axum::Extension(actor): axum::Extension<StaffIdentity>,
+) -> Result<Json<serde_json::Value>, ApiError> {
+    Ok(Json(
+        json!({"channels":state.coordinator.channels(Some(actor)).await?}),
+    ))
+}
+async fn community_channels(
+    State(state): State<AppState>,
+) -> Result<Json<serde_json::Value>, ApiError> {
+    Ok(Json(
+        json!({"channels":state.coordinator.channels(None).await?}),
+    ))
+}
+async fn community_enrollment(
+    State(state): State<AppState>,
+    Path(id): Path<String>,
+) -> Result<Json<crate::channel_store::EnrollmentExport>, ApiError> {
+    let id = RecordId::new(id)?;
+    Ok(Json(
+        state
+            .coordinator
+            .channel_enrollment(id.as_str(), None)
+            .await?,
+    ))
+}
+async fn channel_enrollment(
+    State(state): State<AppState>,
+    axum::Extension(actor): axum::Extension<StaffIdentity>,
+    Path(id): Path<String>,
+) -> Result<Json<crate::channel_store::EnrollmentExport>, ApiError> {
+    let id = RecordId::new(id)?;
+    Ok(Json(
+        state
+            .coordinator
+            .channel_enrollment(id.as_str(), Some(actor))
+            .await?,
+    ))
+}
+#[derive(Deserialize)]
+#[serde(deny_unknown_fields)]
+struct ChannelAccessRequest {
+    staff_id: RecordId,
+    grant: bool,
+}
+async fn channel_access(
+    State(state): State<AppState>,
+    axum::Extension(actor): axum::Extension<StaffIdentity>,
+    Path(id): Path<String>,
+    body: Result<Json<ChannelAccessRequest>, axum::extract::rejection::JsonRejection>,
+) -> Result<Json<serde_json::Value>, ApiError> {
+    operator(&actor)?;
+    let id = RecordId::new(id)?;
+    let value = parse(body)?;
+    state
+        .coordinator
+        .channel_access(&actor.id, value.staff_id.as_str(), id.as_str(), value.grant)
+        .await?;
+    Ok(Json(json!({"updated":true})))
 }
 async fn legacy(
     State(state): State<AppState>,
@@ -383,6 +481,9 @@ pub fn router(state: AppState) -> Router {
         .route("/api/staff", post(enroll))
         .route("/api/staff/{id}", delete(revoke))
         .route("/api/announcements", post(publish))
+        .route("/api/channels", get(channel_catalog))
+        .route("/api/channels/{id}/enrollment", get(channel_enrollment))
+        .route("/api/channels/{id}/access", post(channel_access))
         .route("/waypoints", get(legacy))
         .route("/waypoints/simulated", post(legacy))
         .route("/geopacks", get(legacy).post(legacy))
@@ -391,7 +492,13 @@ pub fn router(state: AppState) -> Router {
         .route("/health", get(health))
         .route("/", get(staff_page))
         .route("/staff", get(staff_page))
+        .route("/channel-selection.js", get(channel_selection_script))
         .route("/public", get(public_page))
+        .route("/public/channels", get(community_channels))
+        .route(
+            "/public/channels/{id}/enrollment",
+            get(community_enrollment),
+        )
         .route("/public/announcements", get(public))
         .merge(private)
         .fallback(|| async { ApiError(StatusCode::NOT_FOUND, "route not found".into()) })

@@ -154,6 +154,7 @@ in
           pkgs.pkg-config
           pkgs.sqlite
           pkgs.cachix
+          pkgs.nodejs_24
           (pkgs.python3.withPackages (ps: [ ps.pyyaml ]))
         ];
         env.PKG_CONFIG_PATH = "${pkgs.sqlite.dev}/lib/pkgconfig";
@@ -254,6 +255,16 @@ in
         profilePrimaryAcceptance =
           if profileConfig.den.quirks.meshServices.profile.primaryAcceptanceTarget then "1" else "0";
         commonChecks = {
+          channel-selection =
+            pkgs.runCommand "mish-channel-selection-check"
+              {
+                nativeBuildInputs = [ pkgs.nodejs_24 ];
+              }
+              ''
+                export MISH_CHANNEL_SELECTION_PATH=${../apps/mish/static/channel-selection.js}
+                node --test ${../tests/channel-selection.test.cjs}
+                touch "$out"
+              '';
           workflows =
             pkgs.runCommand "mish-workflows-check"
               {

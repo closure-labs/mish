@@ -1,5 +1,7 @@
 use anyhow::Result;
 use clap::{Parser, Subcommand};
+use mish::channel_store::{ChannelPlan, ChannelScope, PlannedChannel};
+use mish::channels::MeshChannel;
 use mish::{
     appliance::{EventStore, now},
     coordinator::Coordinator,
@@ -21,6 +23,10 @@ struct Cli {
 }
 #[derive(Subcommand)]
 enum Command {
+    Channels {
+        #[command(subcommand)]
+        command: Channels,
+    },
     Commission {
         #[arg(long)]
         name: String,
@@ -40,6 +46,8 @@ enum Command {
         text: String,
         #[arg(long)]
         author: String,
+        #[arg(long, default_value = "staff")]
+        channel: String,
     },
     Alert {
         #[arg(long)]
@@ -52,6 +60,8 @@ enum Command {
         expires: f64,
         #[arg(long)]
         urgent: bool,
+        #[arg(long, default_value = "staff")]
+        channel: String,
     },
     Ack {
         #[arg(long)]
@@ -124,6 +134,56 @@ enum Command {
     },
 }
 #[derive(Subcommand)]
+enum Channels {
+    Create {
+        #[arg(long)]
+        region: String,
+        #[arg(long)]
+        name: Option<String>,
+        #[arg(long, default_value = "Staff")]
+        staff_name: String,
+        #[arg(long)]
+        department: Vec<String>,
+        #[arg(long)]
+        device: String,
+    },
+    Join {
+        #[arg(long)]
+        input: PathBuf,
+        #[arg(long)]
+        device: String,
+        #[arg(long, default_value = "Staff")]
+        staff_name: String,
+        #[arg(long)]
+        department: Vec<String>,
+    },
+    Deploy {
+        #[arg(long)]
+        device: String,
+        #[arg(long)]
+        recovery: PathBuf,
+    },
+    Export {
+        #[arg(long)]
+        id: String,
+        #[arg(long)]
+        output: PathBuf,
+    },
+    List,
+    Grant {
+        #[arg(long)]
+        staff_id: String,
+        #[arg(long)]
+        channel: String,
+    },
+    Revoke {
+        #[arg(long)]
+        staff_id: String,
+        #[arg(long)]
+        channel: String,
+    },
+}
+#[derive(Subcommand)]
 enum Waypoint {
     AddSimulated {
         #[arg(long)]
@@ -168,6 +228,229 @@ enum Identity {
 fn print(value: impl serde::Serialize) -> Result<()> {
     println!("{}", serde_json::to_string_pretty(&value)?);
     Ok(())
+}
+
+fn local_operator(events: &EventStore) -> Result<StaffIdentity> {
+    let (id, name): (String, String) = events.connect()?.query_row(
+        "SELECT id,name FROM staff WHERE role='operator' LIMIT 1",
+        [],
+        |row| Ok((row.get(0)?, row.get(1)?)),
+    )?;
+    Ok(StaffIdentity {
+        id,
+        name,
+        role: Role::Operator,
+    })
+}
+fn private_output(path: &std::path::Path, bytes: &[u8]) -> Result<()> {
+    use std::io::Write;
+    use std::os::unix::fs::OpenOptionsExt;
+    let mut file = fs::OpenOptions::new()
+        .write(true)
+        .create_new(true)
+        .mode(0o600)
+        .open(path)?;
+    file.write_all(bytes)?;
+    file.sync_all()?;
+    Ok(())
+}
+fn department_id(name: &str) -> Result<String> {
+    let slug: String = name
+        .chars()
+        .filter(char::is_ascii_alphanumeric)
+        .flat_map(char::to_lowercase)
+        .collect();
+    if slug.is_empty() {
+        return Err(mish::invalid("department needs an ASCII name"));
+    }
+    Ok(format!("department-{slug}"))
+}
+async fn channel_command(events: &EventStore, command: Channels) -> Result<()> {
+    use mish::{
+        channels,
+        provision::{self, ProvisionMode},
+    };
+    let owner = local_operator(events)?;
+    match command {
+        Channels::List => print(json!({"channels":events.channel_catalog(Some(&owner))?})),
+        Channels::Export { id, output } => {
+            let export = events.enrollment(&id, Some(&owner))?;
+            private_output(&output, export.qr_svg.as_bytes())?;
+            print(json!({"channel":export.channel,"output":output}))
+        }
+        Channels::Grant { staff_id, channel } => {
+            events.grant_channel_access(&owner.id, &staff_id, &channel)?;
+            print(json!({"granted":channel,"staff_id":staff_id}))
+        }
+        Channels::Revoke { staff_id, channel } => {
+            events.revoke_channel_access(&owner.id, &staff_id, &channel)?;
+            print(json!({"revoked":channel,"staff_id":staff_id,"radio_key_rotation_required":true}))
+        }
+        Channels::Deploy { device, recovery } => {
+            let registry = events.radio_channels()?;
+            if registry.is_empty() {
+                return Err(mish::invalid("create or join a channel plan first"));
+            }
+            let snapshot = provision::inspect(&device).await?;
+            let mut ordered: Vec<_> = registry.iter().collect();
+            ordered.sort_by_key(|entry| entry.metadata.slot);
+            let desired: Vec<_> = ordered
+                .iter()
+                .map(|entry| MeshChannel {
+                    name: entry.metadata.name.clone(),
+                    settings: entry.settings.clone(),
+                })
+                .collect();
+            let primary_matches =
+                snapshot.channels[0].settings.as_ref() == Some(&desired[0].settings);
+            let selected: Vec<_> = ordered
+                .iter()
+                .zip(desired)
+                .map(|(entry, material)| (entry.metadata.slot, material))
+                .collect();
+            let plan = provision::plan_at(
+                &snapshot,
+                &selected,
+                if primary_matches {
+                    ProvisionMode::Join
+                } else {
+                    ProvisionMode::Create
+                },
+            )?;
+            if plan
+                .slots
+                .iter()
+                .copied()
+                .ne(ordered.iter().map(|entry| entry.metadata.slot))
+            {
+                return Err(mish::invalid(
+                    "radio slot layout changed; deployment refused",
+                ));
+            }
+            for entry in &ordered {
+                if entry.lora.as_ref() != Some(&snapshot.lora) {
+                    return Err(mish::invalid(
+                        "radio LoRa settings changed; deployment refused",
+                    ));
+                }
+            }
+            events.clear_deployment_verification()?;
+            let verified = provision::apply(&device, &plan, &recovery).await?;
+            let mut fingerprints = Vec::new();
+            for entry in ordered {
+                if verified.channels[entry.metadata.slot as usize]
+                    .settings
+                    .as_ref()
+                    != Some(&entry.settings)
+                {
+                    return Err(mish::invalid("channel readback differs from registry"));
+                }
+                fingerprints.push((entry.metadata.slot, entry.metadata.fingerprint.clone()));
+            }
+            events.mark_deployment_verified(&fingerprints)?;
+            print(
+                json!({"verified":true,"channels":events.channel_catalog(Some(&owner))?,"recovery":recovery}),
+            )
+        }
+        create_or_join => {
+            let (community, staff_name, department, device, mode, imported_lora) =
+                match create_or_join {
+                    Channels::Create {
+                        region,
+                        name,
+                        staff_name,
+                        department,
+                        device,
+                    } => {
+                        let name = name
+                            .map(Ok)
+                            .unwrap_or_else(|| channels::mesh_name(&region))?;
+                        (
+                            channels::generated(&name)?,
+                            staff_name,
+                            department,
+                            device,
+                            ProvisionMode::Create,
+                            None,
+                        )
+                    }
+                    Channels::Join {
+                        input,
+                        device,
+                        staff_name,
+                        department,
+                    } => {
+                        use std::io::Read;
+                        let mut data = String::new();
+                        fs::File::open(input)?
+                            .take(8193)
+                            .read_to_string(&mut data)?;
+                        if data.len() > 8192 {
+                            return Err(mish::invalid("channel import exceeds size limit"));
+                        }
+                        let imported = channels::import_url(data.trim())?;
+                        if imported.settings.len() != 1 {
+                            return Err(mish::invalid(
+                                "community import must contain exactly one channel; export a community-only QR first",
+                            ));
+                        }
+                        let settings = imported.settings[0].clone();
+                        let name = channels::settings_view(&settings)?.name;
+                        (
+                            MeshChannel { name, settings },
+                            staff_name,
+                            department,
+                            device,
+                            ProvisionMode::Join,
+                            imported.lora,
+                        )
+                    }
+                    _ => unreachable!(),
+                };
+            if department.len() > 6 {
+                return Err(mish::invalid(
+                    "at most six department channels fit beside community and staff",
+                ));
+            }
+            let snapshot = provision::inspect(&device).await?;
+            if imported_lora
+                .as_ref()
+                .is_some_and(|lora| lora != &snapshot.lora)
+            {
+                return Err(mish::invalid(
+                    "imported LoRa settings differ from radio; configure the matching region and modem using the Meshtastic app first",
+                ));
+            }
+            let mut materials = vec![community, channels::generated(&staff_name)?];
+            let mut ids = vec![
+                ("community".into(), ChannelScope::Community),
+                ("staff".into(), ChannelScope::Staff),
+            ];
+            for name in department {
+                ids.push((department_id(&name)?, ChannelScope::Department));
+                materials.push(channels::generated(&name)?);
+            }
+            let plan = provision::plan(&snapshot, &materials, mode)?;
+            let channels = ids
+                .into_iter()
+                .zip(materials)
+                .zip(plan.slots)
+                .map(|(((id, scope), material), slot)| PlannedChannel {
+                    id,
+                    scope,
+                    slot,
+                    settings: material.settings,
+                })
+                .collect();
+            let quarantined = events.install_channel_plan(&ChannelPlan {
+                channels,
+                lora: Some(snapshot.lora),
+            })?;
+            print(
+                json!({"channels":events.channel_catalog(Some(&owner))?,"quarantined":quarantined,"verified":false,"next":"Stop mish-control and run channels deploy to apply and verify the plan"}),
+            )
+        }
+    }
 }
 #[tokio::main]
 async fn main() {
@@ -351,23 +634,34 @@ async fn run(cli: Cli) -> Result<()> {
                     events.revoke(&id)?;
                     print(json!({"revoked":id}))?;
                 }
-                Command::Message { text, author } => {
-                    print(events.create(NewRecord::message(MessageText::new(text)?, author)?)?)?
-                }
+                Command::Channels { command } => channel_command(&events, command).await?,
+                Command::Message {
+                    text,
+                    author,
+                    channel,
+                } => print(events.create(
+                    NewRecord::message(MessageText::new(text)?, author)?.on_channel(&channel)?,
+                )?)?,
                 Command::Alert {
                     text,
                     author,
                     responder,
                     expires,
                     urgent,
-                } => print(events.create(NewRecord::alert(
-                    MessageText::new(text)?,
-                    author,
-                    StaffName::new(responder)?,
-                    expires,
-                    urgent,
-                    now(),
-                )?)?)?,
+                    channel,
+                } => print(
+                    events.create(
+                        NewRecord::alert(
+                            MessageText::new(text)?,
+                            author,
+                            StaffName::new(responder)?,
+                            expires,
+                            urgent,
+                            now(),
+                        )?
+                        .on_channel(&channel)?,
+                    )?,
+                )?,
                 Command::Ack { id, token } => {
                     let actor = events
                         .authenticate(&token)?

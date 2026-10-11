@@ -111,6 +111,7 @@ impl TransmissionState {
 
 #[derive(Clone, Debug)]
 pub struct NewRecord {
+    pub(crate) channel_id: String,
     pub(crate) text: MessageText,
     pub(crate) author: String,
     pub(crate) kind: MessageKind,
@@ -121,6 +122,7 @@ impl NewRecord {
     pub fn message(text: MessageText, author: impl Into<String>) -> Result<Self> {
         let author = StaffName::new(author)?.as_str().to_owned();
         Ok(Self {
+            channel_id: "staff".into(),
             text,
             author,
             kind: MessageKind::Message,
@@ -140,6 +142,7 @@ impl NewRecord {
             return Err(crate::invalid("alerts require expiration within 24 hours"));
         }
         Ok(Self {
+            channel_id: "staff".into(),
             text,
             author: StaffName::new(author)?.as_str().to_owned(),
             kind: if urgent {
@@ -150,6 +153,10 @@ impl NewRecord {
             responder: Some(responder),
             expires: Some(expires),
         })
+    }
+    pub fn on_channel(mut self, id: &str) -> Result<Self> {
+        self.channel_id = RecordId::new(id)?.as_str().to_owned();
+        Ok(self)
     }
 }
 
@@ -186,6 +193,8 @@ pub struct Delivery {
 }
 #[derive(Clone, Debug, Serialize, Deserialize)]
 pub struct Record {
+    pub channel_id: String,
+    pub channel_fingerprint: Option<String>,
     pub id: String,
     pub text: String,
     pub kind: MessageKind,
@@ -205,6 +214,8 @@ pub struct Record {
 }
 #[derive(Clone, Debug, Serialize, Deserialize)]
 pub struct PendingRecord {
+    pub channel_id: String,
+    pub channel_fingerprint: Option<String>,
     pub id: String,
     pub text: String,
     pub kind: MessageKind,

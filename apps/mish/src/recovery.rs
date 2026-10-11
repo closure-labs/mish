@@ -267,6 +267,8 @@ fn restore_with_hook(
         db.execute_batch("PRAGMA journal_mode=DELETE; PRAGMA synchronous=FULL")?;
         let transaction = db.transaction()?;
         quarantined = transaction.execute("UPDATE records SET state='uncertain',uncertain_at=? WHERE state IN ('queued','sending')", [restored_at])?;
+        // A copied journal cannot certify the physical radio attached to its new owner.
+        transaction.execute("UPDATE radio_channels SET verified=0", [])?;
         transaction.execute_batch(RECOVERY_SCHEMA)?;
         transaction.execute(
             "INSERT INTO recovery_history VALUES(?,?,?)",
