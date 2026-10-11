@@ -136,6 +136,7 @@ in
       default = pkgs.mkShell {
         packages = [
           pkgs.git
+          pkgs.gh
           pkgs.nix
           pkgs.nixfmt
           (pkgs.python3.withPackages (
@@ -386,6 +387,7 @@ in
                   --relay mock://check > "$TMPDIR/publication.json"
                 vfctl --state-dir "$VESTAFORGE_STATE_DIR" identity bootstrap-operator > "$TMPDIR/operator.json"
                 export VESTAFORGE_CATALOG_PATH=${../catalog/vestaforge-catalog.json}
+                export VESTAFORGE_QUEUE_SCRIPT_PATH=${../.github/scripts/queue_prs.py}
                 PYTHONPATH=${../apps/vfctl/src} python3 -m unittest discover -s ${../tests}
                 touch "$out"
               '';
@@ -484,6 +486,7 @@ in
                   --relay mock://check > "$TMPDIR/publication.json"
                 vfctl --state-dir "$VESTAFORGE_STATE_DIR" identity bootstrap-operator > "$TMPDIR/operator.json"
                 export VESTAFORGE_CATALOG_PATH=${../catalog/vestaforge-catalog.json}
+                export VESTAFORGE_QUEUE_SCRIPT_PATH=${../.github/scripts/queue_prs.py}
                 PYTHONPATH=${../apps/vfctl/src} python3 -m unittest discover -s ${../tests}
                 touch "$out"
               '';

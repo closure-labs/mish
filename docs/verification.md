@@ -55,5 +55,6 @@ compatibility checks. See [the recovery QA record](qa-reports/snapshot-recovery.
 
 The Checks workflow repeats these gates natively on x86 and ARM and retains
 evaluation/build logs with the tested source revision and architecture.
-The recovery revision needs its own GitHub results and image artifacts;
-earlier successful runs above do not establish those results.
+Recovery revision `c91498b` passed both native jobs in
+[Checks run 38172407182](https://github.com/closure-labs/mish/actions/runs/38172407182).
+Its image realization and physical acceptance remain separate.
