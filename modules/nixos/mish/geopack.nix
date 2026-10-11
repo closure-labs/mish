@@ -1,7 +1,7 @@
 { config, lib, ... }:
 
 let
-  cfg = config.services.vestaforge;
+  cfg = config.services.mish;
 in
 {
   config = lib.mkIf (cfg.enable && cfg.geopack.enable) {

@@ -1,7 +1,7 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "$id": "https://vestaforge.local/schemas/waypoint.schema.json",
-  "title": "VestaForge Waypoint",
+  "$id": "https://mish.local/schemas/waypoint.schema.json",
+  "title": "Mish Waypoint",
   "type": "object",
   "required": ["id", "createdAt", "source", "visibility", "position", "provenance"],
   "additionalProperties": false,

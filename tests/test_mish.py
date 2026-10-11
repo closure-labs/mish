@@ -6,16 +6,16 @@ import tempfile
 import unittest
 from pathlib import Path
 
-from vestaforge.storage import VestaForgeStore, default_config
-from vestaforge.validation import validate_catalog
+from mish.storage import MishStore, default_config
+from mish.validation import validate_catalog
 
 
 class StoreTests(unittest.TestCase):
-    def make_store(self) -> VestaForgeStore:
+    def make_store(self) -> MishStore:
         self.tempdir = tempfile.TemporaryDirectory()
         config = default_config(self.tempdir.name)
         config["nostr"]["relays"] = ["mock://unit"]
-        return VestaForgeStore(self.tempdir.name, config)
+        return MishStore(self.tempdir.name, config)
 
     def tearDown(self) -> None:
         if hasattr(self, "tempdir"):
@@ -81,7 +81,7 @@ class StoreTests(unittest.TestCase):
         self.assertTrue((store.publications_dir / "pack-public.json").exists())
 
     def test_geopack_content_hash_is_stable_for_identical_inputs(self) -> None:
-        os.environ["VF_FIXED_TIME"] = "2026-06-22T00:00:00Z"
+        os.environ["MISH_FIXED_TIME"] = "2026-06-22T00:00:00Z"
         try:
             store_a = self.make_store()
             store_a.add_simulated_waypoint(
@@ -105,7 +105,7 @@ class StoreTests(unittest.TestCase):
             pack_b, _ = store_b.create_geopack("Stable Pack", ["wp-stable"], visibility="public")
             self.assertEqual(pack_a["contentHash"], pack_b["contentHash"])
         finally:
-            os.environ.pop("VF_FIXED_TIME", None)
+            os.environ.pop("MISH_FIXED_TIME", None)
 
     def test_operator_bootstrap_is_persistent_and_requires_mfa(self) -> None:
         store = self.make_store()
@@ -119,8 +119,8 @@ class StoreTests(unittest.TestCase):
     def test_catalog_release_gates_mini_pc_and_rpi4_alpha_profiles(self) -> None:
         catalog_path = Path(
             os.environ.get(
-                "VESTAFORGE_CATALOG_PATH",
-                str(Path(__file__).resolve().parents[1] / "catalog" / "vestaforge-catalog.json"),
+                "MISH_CATALOG_PATH",
+                str(Path(__file__).resolve().parents[1] / "catalog" / "mish-catalog.json"),
             )
         )
         catalog = json.loads(catalog_path.read_text(encoding="utf-8"))
@@ -134,8 +134,8 @@ class StoreTests(unittest.TestCase):
     def test_catalog_includes_reticulum_rnode_as_experimental_radio_provider(self) -> None:
         catalog_path = Path(
             os.environ.get(
-                "VESTAFORGE_CATALOG_PATH",
-                str(Path(__file__).resolve().parents[1] / "catalog" / "vestaforge-catalog.json"),
+                "MISH_CATALOG_PATH",
+                str(Path(__file__).resolve().parents[1] / "catalog" / "mish-catalog.json"),
             )
         )
         catalog = json.loads(catalog_path.read_text(encoding="utf-8"))
@@ -146,7 +146,7 @@ class StoreTests(unittest.TestCase):
         self.assertIn("meshtastic-simulated", radio["releaseGatedProviders"])
 
     def test_default_config_reports_radio_providers(self) -> None:
-        config = default_config("/tmp/vestaforge-test")
+        config = default_config("/tmp/mish-test")
         self.assertEqual(config["nixDistribution"], "nixos")
         self.assertEqual(config["radio"]["providers"], [])
         self.assertFalse(config["radio"]["simulator"]["enable"])

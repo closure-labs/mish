@@ -10,7 +10,7 @@
     "${modulesPath}/installer/sd-card/sd-image-aarch64.nix"
   ];
 
-  networking.hostName = "vestaforge-rpi4";
+  networking.hostName = "mish-rpi4";
   networking.firewall.enable = true;
 
   boot.supportedFilesystems = lib.mkForce [
@@ -38,10 +38,10 @@
 
   hardware.enableRedistributableFirmware = lib.mkForce false;
 
-  services.vestaforge = {
+  services.mish = {
     enable = true;
     profile = "sbc-rpi4";
-    domain = "vestaforge.local";
+    domain = "mish.local";
     nostr.relays = [ "mock://local" ];
     openziti.enable = false;
     geopack.enable = false;

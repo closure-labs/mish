@@ -1,7 +1,7 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "$id": "https://vestaforge.local/schemas/geopack-manifest.schema.json",
-  "title": "VestaForge GeoPack Manifest",
+  "$id": "https://mish.local/schemas/geopack-manifest.schema.json",
+  "title": "Mish GeoPack Manifest",
   "type": "object",
   "required": [
     "version",

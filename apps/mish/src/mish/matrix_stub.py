@@ -34,7 +34,7 @@ class MatrixStubHandler(BaseHTTPRequestHandler):
 
 
 def main(argv: list[str] | None = None) -> int:
-    parser = argparse.ArgumentParser(description="VestaForge Matrix provider health stub")
+    parser = argparse.ArgumentParser(description="Mish Matrix provider health stub")
     parser.add_argument("--provider", required=True, choices=["tuwunel", "conduit"])
     parser.add_argument("--domain", required=True)
     parser.add_argument("--host", default="127.0.0.1")

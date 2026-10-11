@@ -12,8 +12,8 @@ alerts complement the event's established emergency procedures.
 - Check authenticated `/api/status` for the selected adapter and connection state.
   Journal author names identify enrolled staff; delivery timestamps and human
   ACK records remain separate.
-- Check `systemctl status vestaforge-control caddy` and
-  `journalctl -u vestaforge-control -n 100` at the console.
+- Check `systemctl status mish-control caddy` and
+  `journalctl -u mish-control -n 100` at the console.
 - Send a browser message and a radio message; verify both directions and a
   human `ACK <ID>` on an active alert.
 - Check power, USB cable, `/dev/serial/by-id` path, radio channel and free disk
@@ -56,14 +56,14 @@ review any uncertain records independently. Do not change staff channel keys
 mid-event without a coordinated radio update.
 
 For service failure, inspect logs and storage before restarting with
-`systemctl restart vestaforge-control`. Confirm journal and ACK history after
+`systemctl restart mish-control`. Confirm journal and ACK history after
 restart. When the coordinator is unavailable, staff communicate directly by
 radio. Keep the old coordinator stopped before activating a restored spare;
 never operate two authorities against the same event.
 
 For exposed credentials, run privileged
-`vfctl --config /etc/vestaforge/config.json revoke --id <identity-id>` as the
-`vestaforge` service user and enroll a replacement. Enroll a replacement
+`mish --config /etc/mish/config.json revoke --id <identity-id>` as the
+`mish` service user and enroll a replacement. Enroll a replacement
 operator before revoking the last operator.
 
 ## Recovery and event close
@@ -73,7 +73,7 @@ SQLite backups, CA/config backups, restore and generation rollback. A software
 rollback does not roll back event data. Before swapping databases, stop the
 application and preserve the existing state; check credentials, journal, public
 projection, ACK history and radio operation before accepting traffic.
-Use `vfctl restore --input <backup>` into fresh state rather than replacing a
+Use `mish restore --input <backup>` into fresh state rather than replacing a
 database by hand. Snapshot queue entries become uncertain because they may
 have been transmitted after backup capture; review them before creating any
 replacement. Normal service restarts preserve the current pending queue.

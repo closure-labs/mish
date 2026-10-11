@@ -5,9 +5,9 @@ import time
 import unittest
 from pathlib import Path
 from aiohttp.test_utils import TestClient, TestServer
-from vestaforge.appliance import EventStore
-from vestaforge.server import create_app
-from vestaforge.storage import VestaForgeStore, default_config
+from mish.appliance import EventStore
+from mish.server import create_app
+from mish.storage import MishStore, default_config
 
 
 class JournalTests(unittest.TestCase):
@@ -38,7 +38,7 @@ class JournalTests(unittest.TestCase):
 
     def test_traversal_and_malformed_identifiers(self):
         with tempfile.TemporaryDirectory() as directory:
-            store = VestaForgeStore(directory)
+            store = MishStore(directory)
             for identity in ('../escape', '/tmp/escape', '..', 'a/b', 'a\\b', ['bad'], '', 'a'*129):
                 with self.subTest(identity=identity), self.assertRaises(ValueError):
                     store.waypoint_path(identity)
@@ -105,7 +105,7 @@ class APITests(unittest.IsolatedAsyncioTestCase):
         self.config = default_config(self.temp.name)
         self.config['radio']['adapter'] = 'disabled'
         self.config['radio']['simulator']['enable'] = True
-        self.store = VestaForgeStore(self.temp.name, self.config)
+        self.store = MishStore(self.temp.name, self.config)
         self.events = EventStore(self.temp.name)
         self.owner = self.events.enroll('owner', 'operator', first=True)
         self.staff = self.events.enroll('staff')

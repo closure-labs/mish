@@ -7,7 +7,7 @@ from pathlib import Path
 from typing import Any
 
 from .server import serve
-from .storage import VestaForgeStore, load_config, status_payload
+from .storage import MishStore, load_config, status_payload
 from .validation import validate_catalog, validate_geopack_manifest, validate_waypoint
 
 
@@ -16,9 +16,9 @@ def print_json(value: Any) -> None:
 
 
 def build_parser() -> argparse.ArgumentParser:
-    parser = argparse.ArgumentParser(prog="vfctl", description="VestaForge alpha control CLI")
-    parser.add_argument("--config", help="Path to VestaForge config JSON")
-    parser.add_argument("--state-dir", help="Override VestaForge state directory")
+    parser = argparse.ArgumentParser(prog="mish", description="Mish alpha control CLI")
+    parser.add_argument("--config", help="Path to Mish config JSON")
+    parser.add_argument("--state-dir", help="Override Mish state directory")
     sub = parser.add_subparsers(dest="command", required=True)
 
     commission = sub.add_parser("commission", help="Create first local operator; print token once")
@@ -53,7 +53,7 @@ def build_parser() -> argparse.ArgumentParser:
 
     sub.add_parser("status", help="Show profile, provider, and service health")
 
-    serve_parser = sub.add_parser("serve", help="Run the local VestaForge HTTP API")
+    serve_parser = sub.add_parser("serve", help="Run the local Mish HTTP API")
     serve_parser.add_argument("--host", default=None)
     serve_parser.add_argument("--port", type=int, default=None)
 
@@ -99,9 +99,9 @@ def build_parser() -> argparse.ArgumentParser:
     return parser
 
 
-def load_store(args: argparse.Namespace) -> tuple[dict[str, Any], VestaForgeStore]:
+def load_store(args: argparse.Namespace) -> tuple[dict[str, Any], MishStore]:
     config = load_config(args.config, args.state_dir)
-    return config, VestaForgeStore(config["stateDir"], config)
+    return config, MishStore(config["stateDir"], config)
 
 
 def command_status(args: argparse.Namespace) -> int:
@@ -128,7 +128,7 @@ def command_waypoint(args: argparse.Namespace) -> int:
             body=args.body,
             visibility=args.visibility,
             waypoint_id=args.waypoint_id,
-            source_payload={"cli": "vfctl waypoint add-simulated"},
+            source_payload={"cli": "mish waypoint add-simulated"},
         )
         print_json({"created": created, "waypoint": waypoint})
         return 0
@@ -253,7 +253,7 @@ def main(argv: list[str] | None = None) -> int:
         if args.command == "internal-check-schemas":
             return command_internal_check_schemas(args)
     except ValueError as exc:
-        print(f"vfctl: {exc}", file=sys.stderr)
+        print(f"mish: {exc}", file=sys.stderr)
         return 2
     parser.error("unknown command")
     return 2

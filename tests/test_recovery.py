@@ -10,9 +10,9 @@ import time
 import unittest
 from unittest.mock import patch
 
-from vestaforge.appliance import EventStore
-from vestaforge.cli import main
-from vestaforge.radio import RadioWorker
+from mish.appliance import EventStore
+from mish.cli import main
+from mish.radio import RadioWorker
 
 
 class RecoveryTests(unittest.TestCase):
@@ -114,7 +114,7 @@ class RecoveryTests(unittest.TestCase):
             result, output, errors = self.restore(source=source)
             self.assertEqual(result, 2)
             self.assertEqual(output, '')
-            self.assertIn('vfctl:', errors)
+            self.assertIn('mish:', errors)
             self.assertFalse((self.spare / 'events.sqlite').exists())
             self.assertFalse(list(self.spare.glob('.restore-*')))
 
@@ -160,7 +160,7 @@ class RecoveryTests(unittest.TestCase):
         def race(source, destination):
             Path(destination).write_bytes(b'concurrent commissioning')
             return real_link(source, destination)
-        with patch('vestaforge.recovery.os.link', side_effect=race):
+        with patch('mish.recovery.os.link', side_effect=race):
             result, output, _ = self.restore()
         self.assertEqual(result, 2)
         self.assertEqual(output, '')
@@ -170,7 +170,7 @@ class RecoveryTests(unittest.TestCase):
     def test_failed_install_leaves_backup_and_destination_intact(self):
         self.store.backup(self.backup)
         original = self.backup.read_bytes()
-        with patch('vestaforge.recovery.os.link', side_effect=OSError('disk is full')):
+        with patch('mish.recovery.os.link', side_effect=OSError('disk is full')):
             result, output, errors = self.restore()
         self.assertEqual(result, 2)
         self.assertEqual(output, '')

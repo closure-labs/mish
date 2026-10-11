@@ -1,7 +1,7 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "$id": "https://vestaforge.local/schemas/catalog.schema.json",
-  "title": "VestaForge Local Catalog",
+  "$id": "https://mish.local/schemas/catalog.schema.json",
+  "title": "Mish Local Catalog",
   "type": "object",
   "required": ["version", "signedAt", "signer", "profiles", "capabilities", "policies", "signature"],
   "additionalProperties": false,

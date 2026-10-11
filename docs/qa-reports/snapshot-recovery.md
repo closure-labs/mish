@@ -10,7 +10,7 @@ after backup capture. Starting directly from that snapshot previously replayed
 those records. A read-only project audit reproduced that behavior through
 `nix develop`.
 
-`vfctl restore --input <backup>` now restores into fresh state, validates a
+`mish restore --input <backup>` now restores into fresh state, validates a
 standalone snapshot and installs a staged `0600` database atomically without
 overwriting any event database. Snapshot `queued` and `sending` records become
 `uncertain`; staff must review them before deliberately creating replacements.
@@ -22,7 +22,7 @@ quarantined count are recorded in `recovery_history` and CLI output.
 | Gate | Result | Evidence |
 |---|---|---|
 | Regression before implementation | Failed as expected | CLI had no restore operation; audit independently reproduced snapshot replay |
-| Python suite | 38 passed | `nix develop --command env PYTHONPATH=apps/vfctl/src python -m unittest discover -s tests` |
+| Python suite | 38 passed | `nix develop --command env PYTHONPATH=apps/mish/src python -m unittest discover -s tests` |
 | All-system evaluation | Passed | `nix develop --command nix flake check --all-systems --no-build --accept-flake-config` |
 | Native x86 checks | Passed | `nix develop --command nix flake check -L --accept-flake-config` |
 | Booted appliance recovery | Passed | `tests/appliance.nix`: backup, original send, fresh restore, no replay, staff auth/ACK/public history, new sends and trusted HTTPS |

@@ -6,7 +6,7 @@
 }:
 
 let
-  cfg = config.services.vestaforge;
+  cfg = config.services.mish;
   ziti = cfg.openziti;
   servicePolicy = {
     version = "0.1";
@@ -36,11 +36,11 @@ let
       };
     };
   };
-  policyFile = pkgs.writeText "vestaforge-openziti-policy.json" (builtins.toJSON servicePolicy);
+  policyFile = pkgs.writeText "mish-openziti-policy.json" (builtins.toJSON servicePolicy);
 in
 {
   config = lib.mkIf (cfg.enable && ziti.enable) {
-    environment.etc."vestaforge/openziti-policy.json".source = policyFile;
+    environment.etc."mish/openziti-policy.json".source = policyFile;
 
     den.quirks.meshServices.openziti = {
       controllerUrl = "http://127.0.0.1:${toString ziti.controllerPort}";
@@ -49,14 +49,14 @@ in
       privilegedMfaRequired = ziti.privilegedMfaRequired;
     };
 
-    systemd.services.vestaforge-openziti-controller = {
-      description = "VestaForge OpenZiti controller baseline";
+    systemd.services.mish-openziti-controller = {
+      description = "Mish OpenZiti controller baseline";
       wantedBy = [ "multi-user.target" ];
       after = [ "network.target" ];
       serviceConfig = {
-        ExecStart = "${cfg.package}/bin/vf-openziti-stub --role controller --host 127.0.0.1 --port ${toString ziti.controllerPort} ${lib.optionalString ziti.privilegedMfaRequired "--require-mfa"}";
-        User = "vestaforge";
-        Group = "vestaforge";
+        ExecStart = "${cfg.package}/bin/mish-openziti-stub --role controller --host 127.0.0.1 --port ${toString ziti.controllerPort} ${lib.optionalString ziti.privilegedMfaRequired "--require-mfa"}";
+        User = "mish";
+        Group = "mish";
         Restart = "on-failure";
         RestartSec = "2s";
         NoNewPrivileges = true;
@@ -66,17 +66,17 @@ in
       };
     };
 
-    systemd.services.vestaforge-openziti-edge-router = {
-      description = "VestaForge OpenZiti edge-router baseline";
+    systemd.services.mish-openziti-edge-router = {
+      description = "Mish OpenZiti edge-router baseline";
       wantedBy = [ "multi-user.target" ];
       after = [
         "network.target"
-        "vestaforge-openziti-controller.service"
+        "mish-openziti-controller.service"
       ];
       serviceConfig = {
-        ExecStart = "${cfg.package}/bin/vf-openziti-stub --role edge-router --host 127.0.0.1 --port ${toString ziti.edgeRouterPort} ${lib.optionalString ziti.privilegedMfaRequired "--require-mfa"}";
-        User = "vestaforge";
-        Group = "vestaforge";
+        ExecStart = "${cfg.package}/bin/mish-openziti-stub --role edge-router --host 127.0.0.1 --port ${toString ziti.edgeRouterPort} ${lib.optionalString ziti.privilegedMfaRequired "--require-mfa"}";
+        User = "mish";
+        Group = "mish";
         Restart = "on-failure";
         RestartSec = "2s";
         NoNewPrivileges = true;

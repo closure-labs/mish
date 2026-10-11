@@ -2,13 +2,13 @@
 pkgs.testers.nixosTest {
   name = "mish-event-appliance";
   nodes.machine = { pkgs, ... }: {
-    imports = [ self.nixosModules.vestaforge ];
+    imports = [ self.nixosModules.mish ];
     nixpkgs.overlays = [ self.overlays.default ];
     environment.systemPackages = [
       pkgs.curl
       pkgs.jq
     ];
-    services.vestaforge = {
+    services.mish = {
       enable = true;
       localAccess.enable = true;
       radio.simulator.enable = true;
@@ -18,7 +18,7 @@ pkgs.testers.nixosTest {
   };
   testScript = ''
     machine.start()
-    machine.wait_for_unit("vestaforge-control.service")
+    machine.wait_for_unit("mish-control.service")
     machine.wait_for_open_port(8787)
     machine.wait_for_unit("caddy.service")
     machine.wait_for_open_port(443)
@@ -27,7 +27,7 @@ pkgs.testers.nixosTest {
     machine.succeed("test $(curl -s -o /dev/null -w '%{http_code}' http://127.0.0.1:8787/api/messages) = 401")
     machine.succeed("curl --fail --silent http://127.0.0.1:8787/public/announcements")
     import json
-    operator = json.loads(machine.succeed("vfctl --state-dir /var/lib/vestaforge commission --name Operator"))
+    operator = json.loads(machine.succeed("mish --state-dir /var/lib/mish commission --name Operator"))
     token = operator["token"]
     def request(method, path, payload=None, bearer=token):
         command = "curl --fail --silent -X " + method + " -H 'Authorization: Bearer " + bearer + "' -H 'Content-Type: application/json'"
@@ -41,8 +41,8 @@ pkgs.testers.nixosTest {
     expires = int(machine.succeed("date +%s").strip()) + 3600
     alert = request("POST", "/api/alerts", {"text": "Find supervisor", "responder": staff["id"], "kind": "alert", "expires": expires})
     request("POST", "/api/alerts/" + alert["id"] + "/ack", {}, staff["token"])
-    machine.succeed("systemctl restart vestaforge-control.service")
-    machine.wait_for_unit("vestaforge-control.service")
+    machine.succeed("systemctl restart mish-control.service")
+    machine.wait_for_unit("mish-control.service")
     machine.wait_for_open_port(8787)
     messages = request("GET", "/api/messages")
     assert "Private restart test" in json.dumps(messages)
@@ -52,19 +52,19 @@ pkgs.testers.nixosTest {
     assert "Private restart test" not in machine.succeed("curl --fail --silent http://127.0.0.1:8787/public/announcements")
 
     announcement = request("POST", "/api/announcements", {"text": "Water station open"})
-    machine.succeed("systemctl stop vestaforge-control.service")
-    snapshot_queued = json.loads(machine.succeed("runuser -u vestaforge -- vfctl --state-dir /var/lib/vestaforge message --author 'Operator' --text 'Queued at snapshot time'"))
-    machine.succeed("runuser -u vestaforge -- vfctl --state-dir /var/lib/vestaforge backup --output /tmp/event-backup.sqlite")
-    machine.succeed("systemctl start vestaforge-control.service")
+    machine.succeed("systemctl stop mish-control.service")
+    snapshot_queued = json.loads(machine.succeed("runuser -u mish -- mish --state-dir /var/lib/mish message --author 'Operator' --text 'Queued at snapshot time'"))
+    machine.succeed("runuser -u mish -- mish --state-dir /var/lib/mish backup --output /tmp/event-backup.sqlite")
+    machine.succeed("systemctl start mish-control.service")
     machine.wait_for_open_port(8787)
     machine.wait_until_succeeds("curl --fail --silent -H 'Authorization: Bearer " + token + "' http://127.0.0.1:8787/api/messages | jq -e '.messages[] | select(.id == \"" + snapshot_queued["id"] + "\") | .state == \"submitted\"'")
-    machine.succeed("systemctl stop vestaforge-control.service")
-    machine.succeed("mv /var/lib/vestaforge /var/lib/vestaforge-before-restore")
-    machine.succeed("install -d -m 0700 -o vestaforge -g vestaforge /var/lib/vestaforge")
-    recovery = json.loads(machine.succeed("runuser -u vestaforge -- vfctl --state-dir /var/lib/vestaforge restore --input /tmp/event-backup.sqlite"))
+    machine.succeed("systemctl stop mish-control.service")
+    machine.succeed("mv /var/lib/mish /var/lib/mish-before-restore")
+    machine.succeed("install -d -m 0700 -o mish -g mish /var/lib/mish")
+    recovery = json.loads(machine.succeed("runuser -u mish -- mish --state-dir /var/lib/mish restore --input /tmp/event-backup.sqlite"))
     assert recovery["quarantined"] >= 1
-    machine.fail("runuser -u vestaforge -- vfctl --state-dir /var/lib/vestaforge restore --input /tmp/event-backup.sqlite")
-    machine.succeed("systemctl start vestaforge-control.service")
+    machine.fail("runuser -u mish -- mish --state-dir /var/lib/mish restore --input /tmp/event-backup.sqlite")
+    machine.succeed("systemctl start mish-control.service")
     machine.wait_for_open_port(8787)
     recovered = request("GET", "/api/messages", bearer=staff["token"])["messages"]
     snapshot_record = next(item for item in recovered if item["id"] == snapshot_queued["id"])
@@ -79,7 +79,7 @@ pkgs.testers.nixosTest {
     machine.wait_until_succeeds("curl --fail --silent -H 'Authorization: Bearer " + token + "' http://127.0.0.1:8787/api/messages | jq -e '.messages[] | select(.id == \"" + fresh["id"] + "\") | .state == \"submitted\"'")
     final_messages = request("GET", "/api/messages")["messages"]
     assert next(item for item in final_messages if item["id"] == snapshot_queued["id"])["state"] == "uncertain"
-    machine.succeed("test -f /var/lib/vestaforge-before-restore/events.sqlite")
+    machine.succeed("test -f /var/lib/mish-before-restore/events.sqlite")
     machine.succeed("curl --fail --silent --cacert /var/lib/caddy/.local/share/caddy/pki/authorities/local/root.crt --resolve mish.home.arpa:443:127.0.0.1 https://mish.home.arpa/health")
   '';
 }

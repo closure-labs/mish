@@ -6,7 +6,7 @@
 }:
 
 let
-  cfg = config.services.vestaforge;
+  cfg = config.services.mish;
   releaseGatedMatrix =
     (cfg.profile == "mini-pc" && cfg.matrix.provider == "tuwunel")
     || (cfg.profile == "sbc-rpi4" && cfg.matrix.provider == "conduit");
@@ -83,22 +83,22 @@ let
       };
     };
     catalog = {
-      path = "/etc/vestaforge/catalog.json";
+      path = "/etc/mish/catalog.json";
     };
   };
-  renderedConfig = pkgs.writeText "vestaforge-config.json" (builtins.toJSON configJson);
+  renderedConfig = pkgs.writeText "mish-config.json" (builtins.toJSON configJson);
 in
 {
   config = lib.mkIf cfg.enable {
     den.quirks.meshServices.control = {
       localUrl = "http://${cfg.api.bindHost}:${toString cfg.api.port}";
       matrixReleaseGated = releaseGatedMatrix;
-      configPath = "/etc/vestaforge/config.json";
-      catalogPath = "/etc/vestaforge/catalog.json";
+      configPath = "/etc/mish/config.json";
+      catalogPath = "/etc/mish/catalog.json";
     };
 
-    environment.etc."vestaforge/config.json".source = renderedConfig;
-    environment.etc."vestaforge/catalog.json".source = ../../../catalog/vestaforge-catalog.json;
+    environment.etc."mish/config.json".source = renderedConfig;
+    environment.etc."mish/catalog.json".source = ../../../catalog/mish-catalog.json;
 
     services.caddy = lib.mkIf cfg.localAccess.enable {
       enable = true;
@@ -111,22 +111,22 @@ in
       80
       443
     ];
-    users.users.vestaforge.extraGroups = lib.optionals cfg.radio.meshtastic.enable [ "dialout" ];
-    systemd.services.vestaforge-control = {
-      description = "VestaForge local control API";
+    users.users.mish.extraGroups = lib.optionals cfg.radio.meshtastic.enable [ "dialout" ];
+    systemd.services.mish-control = {
+      description = "Mish local control API";
       wantedBy = [ "multi-user.target" ];
       after = [
         "network.target"
 
       ]
       ++ lib.optionals cfg.openziti.enable [
-        "vestaforge-openziti-controller.service"
-        "vestaforge-openziti-edge-router.service"
+        "mish-openziti-controller.service"
+        "mish-openziti-edge-router.service"
       ];
       serviceConfig = {
-        ExecStart = "${cfg.package}/bin/vfctl --config /etc/vestaforge/config.json --state-dir ${lib.escapeShellArg cfg.stateDir} serve";
-        User = "vestaforge";
-        Group = "vestaforge";
+        ExecStart = "${cfg.package}/bin/mish --config /etc/mish/config.json --state-dir ${lib.escapeShellArg cfg.stateDir} serve";
+        User = "mish";
+        Group = "mish";
         Restart = "on-failure";
         RestartSec = "2s";
         UMask = "0077";

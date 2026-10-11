@@ -33,7 +33,7 @@ class OpenZitiStubHandler(BaseHTTPRequestHandler):
 
 
 def main(argv: list[str] | None = None) -> int:
-    parser = argparse.ArgumentParser(description="VestaForge OpenZiti baseline health stub")
+    parser = argparse.ArgumentParser(description="Mish OpenZiti baseline health stub")
     parser.add_argument("--role", required=True, choices=["controller", "edge-router"])
     parser.add_argument("--host", default="127.0.0.1")
     parser.add_argument("--port", type=int, required=True)

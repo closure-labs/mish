@@ -1,99 +1,98 @@
-# Mish / VestaForge
+# Mish
 
-Mish is an offline, owner-operated event coordination appliance. VestaForge is
-its existing repository, NixOS module and CLI name. One coordinator serves a
-private staff web app, journals messages and alerts in SQLite, and connects to a
-USB Meshtastic radio. Attendees see a read-only feed of explicitly published
-announcements. An external Wi-Fi access point connects to the coordinator by
-Ethernet; event operation requires no cloud account or WAN.
+**Local coordination for events that need to run offline.**
 
-The initial target is x86_64, followed by Raspberry Pi 4 with 4 GB RAM. The Pi 5
-and home-server profiles remain experimental. This is an implementation
-prototype: image realization, physical installation, radio interoperability and
-an eight-hour event rehearsal require separate acceptance evidence.
+Mish gives event staff a private place to exchange short messages, raise
+operational alerts and acknowledge who is responding. Attendees get a separate,
+read-only feed of announcements the operator chooses to publish. You run the
+coordinator, enroll your staff and keep event data on your own appliance.
+
+An external Wi-Fi access point connects staff browsers to a NixOS coordinator
+over the local network. A USB Meshtastic radio connects it to staff radios.
+Event operation requires no cloud account, hosted service or internet connection.
+
+## What staff and operators can do
+
+- **Coordinate privately.** Exchange staff text in the browser and through the
+  radio adapter, with a local SQLite journal and durable outbound queue.
+- **Make responsibility visible.** Give alerts a responder and expiry, then
+  collect explicit acknowledgements from enrolled staff or radio replies.
+- **Publish deliberately.** Share official announcement text with attendees
+  while keeping staff conversations, identities and unpublished alerts private.
+- **Recover with context.** Back up event history and credentials, restore to a
+  spare, and review uncertain sends before creating replacements.
+
+Mish keeps local persistence, radio submission, transport confirmation and
+human acknowledgement separate. A radio confirmation does not mean a person
+read an alert. Staff can reply `ACK <ID>` from stock radio clients; those replies
+retain their radio node and channel provenance.
+
+## One coordinator, a local network and staff radios
+
+```mermaid
+flowchart LR
+  Staff[Staff browsers] --> AP[External Wi-Fi access point]
+  AP --> Mish[NixOS coordinator]
+  Mish --> Journal[(SQLite journal and outbox)]
+  Mish <--> USB[USB Meshtastic radio]
+  USB <--> Radios[Staff radios]
+  Attendees[Attendee browsers] --> Feed[Published announcements]
+  Mish --> Feed
+```
+
+The first deployment target is an x86_64 mini-PC, followed by Raspberry Pi 4
+with 4 GB RAM. One coordinator is authoritative; a spare is activated manually.
+Staff devices trust the event's local HTTPS certificate authority during setup.
+Operator tokens and private radio channel keys are provisioned for the event
+and are absent from shared images.
 
 ## Start here
 
-- [Commissioning and recovery](docs/commissioning.md): installation, local TLS,
-  staff/radio enrollment, backup, restore and end-of-event wipe.
-- [Live event operator runbook](docs/operator-runbook.md): outages, uncertain
-  sends, unacknowledged alerts and recovery.
-- [Architecture and milestone gates](docs/roadmap.md): capability inventory,
-  dependencies, acknowledgement semantics and deferred work.
-- [Verification evidence](docs/verification.md): automated results and open
-  image/hardware gates.
-- [Physical acceptance record](docs/acceptance.md): reproducible field checklist
-  and measured results; unperformed checks remain open.
-- [Contributing](docs/contributing.md): local checks, jj bookmarks and PRs.
-- [Building](docs/building-alpha.md): native Linux outputs and macOS builders.
+**Preparing an event:** follow [commissioning and recovery](docs/commissioning.md)
+to install the appliance, configure your AP and private radio channel, enroll
+staff and send the first message. Keep the
+[operator runbook](docs/operator-runbook.md) available during the event.
+
+**Evaluating or contributing:** use the build commands below, then read the
+[architecture and milestone gates](docs/roadmap.md),
+[HTTP API](docs/api.md) and [contribution guide](docs/contributing.md).
+
+**Checking readiness:** consult the revision-specific
+[verification evidence](docs/verification.md) and complete the
+[physical acceptance record](docs/acceptance.md) on your hardware.
 
 ## Build and verify
 
 ```bash
-nix develop
-nix flake check --no-build --all-systems
-nix flake check
-nix build .#packages.x86_64-linux.vestaforge-mini-pc-image
-nix build .#packages.aarch64-linux.vestaforge-rpi4-image
+nix develop --command nix flake check --no-build --all-systems
+nix develop --command nix flake check
+nix develop --command nix build .#packages.x86_64-linux.mish-mini-pc-image
+nix develop --command nix build .#packages.x86_64-linux.mish-mini-pc-installer
+nix develop --command nix build .#packages.aarch64-linux.mish-rpi4-image
 ```
 
-The mini-PC image name remains compatible with earlier CLI/module names and
-builds a QEMU VM. Physical installation uses the separate installer output
-described in the commissioning guide. Evaluation checks expression validity;
-builds realize artifacts; VM tests exercise a running application. None proves
-physical hardware readiness. Build ARM outputs on a native ARM builder.
+The x86 image is a QEMU appliance; the installer is a separate ISO. The Pi 4
+output is an SD image and requires a native ARM builder. NixOS 26.05 and the
+committed `flake.lock` define the supported appliance build. See the
+[building guide](docs/building-alpha.md) for builder setup and evidence levels.
 
-The supported-target configuration uses NixOS 26.05 and `system.stateVersion =
-"26.05"`: the project has never been deployed, so there is no installed-state
-compatibility to preserve. Inputs are committed in `flake.lock`.
+The CLI is `mish`, the NixOS module is `services.mish`, and runtime state
+defaults to `/var/lib/mish`. Filesystem access to that state is administrative
+access. The bundled browser app uses a local SQLite journal; Caddy provides
+local HTTPS.
 
-## Application boundaries
+## Readiness and scope
 
-The HTTP application binds to loopback by default and sits behind Caddy local
-HTTPS on the appliance. Operator and staff bearer credentials are generated at
-commissioning or first boot and kept in runtime state, never in shared images.
-The local CLI runs as the appliance's trusted operator/service user; filesystem
-access to that state is administrative access.
+Native x86 and ARM checks, image realization and booted x86 VM application tests
+have passed for the revisions recorded in the
+[verification log](docs/verification.md). Physical installation, USB/RF
+interoperability, Pi 4 commissioning and an eight-hour event rehearsal remain
+unverified. This is a prototype for qualification, with draft releases gated
+on physical acceptance.
 
-Messages, alerts and acknowledgement history are private. Publication is an
-explicit operator action that creates a separate announcement projection.
-Incoming radio messages never publish themselves. Broadcast transport
-confirmation does not prove a human received or read an alert; staff must
-acknowledge it explicitly.
-
-The existing waypoint/GeoPack CLI is retained for compatibility. Matrix and
-OpenZiti services are health stubs, not implemented messaging or access
-protection. Reticulum starts a daemon but has no application bridge. Nostr
-mock/file publication and waypoint simulation are development facilities;
-these integrations are deferred and simulations are opt-in. The
-[historical whitepaper](docs/vf-whitepaper-draft.md) is retained as a design
-archive and does not describe current delivered capabilities.
-
-## HTTP surface
-
-Send `Authorization: Bearer <token>` for staff/operator operations. The bundled
-staff app uses the same routes. Requests are bounded to 16 KiB; text on the
-initial radio path is limited to 160 UTF-8 bytes.
-
-| Route | Access | Behavior |
-|---|---|---|
-| `GET /health` | Public | Minimal coordinator health |
-| `GET /staff` | Public app shell | Data requires an enrolled token |
-| `GET /public` and `/public/announcements` | Public | Published announcements only |
-| `GET /api/status` | Staff | Selected adapter and current radio connection state |
-| `GET /api/messages` | Staff | Private journal, enrolled author names and acknowledgement state |
-| `POST /api/messages` | Staff | Durably accept text into the outbox |
-| `POST /api/alerts` | Staff | Accept alert with responder and expiry |
-| `POST /api/alerts/{id}/ack` | Staff | Explicit authenticated acknowledgement |
-| `POST /api/staff` | Operator | Generate staff/operator enrollment token |
-| `POST /api/announcements` | Operator | Explicitly publish announcement text |
-| `DELETE /api/staff/{id}` | Operator | Revoke a credential, preserving the last operator |
-
-The original waypoint/GeoPack HTTP operations require operator authorization;
-network GeoPack publication remains a local CLI operation during the PoC.
-
-The journal preserves delivery timestamps separately from its current queue,
-submission, transport-confirmation and uncertainty state. Human ACKs remain
-separate records. Real-radio sends are paced by
-`services.vestaforge.radio.meshtastic.sendIntervalSeconds` (30 seconds by
-default). This is engineering pacing, not an RF delivery-time promise.
+The first release focuses on staff coordination and explicit public
+announcements. Matrix and OpenZiti are optional health stubs, Reticulum has no
+application messaging bridge, and waypoint/GeoPack simulations and mock/file
+Nostr publication are development facilities. Those integrations and additional
+hardware profiles remain deferred; the
+[design history](docs/mish-design-history.md) explains the narrower direction.

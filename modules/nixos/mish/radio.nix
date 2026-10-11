@@ -6,12 +6,12 @@
 }:
 
 let
-  cfg = config.services.vestaforge;
+  cfg = config.services.mish;
   radio = cfg.radio;
   rnode = radio.reticulumRnode;
   boolString = value: if value then "yes" else "no";
   optionalConfig = condition: line: lib.optionalString condition "      ${line}\n";
-  reticulumConfig = pkgs.writeText "vestaforge-reticulum-rnode-config" ''
+  reticulumConfig = pkgs.writeText "mish-reticulum-rnode-config" ''
     [reticulum]
       enable_transport = ${boolString rnode.enableTransport}
       share_instance = ${boolString rnode.shareInstance}
@@ -49,15 +49,15 @@ in
       }
       {
         assertion = radio.simulator.enable -> builtins.elem "meshtastic-simulated" radio.providers;
-        message = ''services.vestaforge.radio.simulator.enable requires "meshtastic-simulated" in services.vestaforge.radio.providers.'';
+        message = ''services.mish.radio.simulator.enable requires "meshtastic-simulated" in services.mish.radio.providers.'';
       }
       {
         assertion = rnode.enable -> builtins.elem "reticulum-rnode" radio.providers;
-        message = ''services.vestaforge.radio.reticulumRnode.enable requires "reticulum-rnode" in services.vestaforge.radio.providers.'';
+        message = ''services.mish.radio.reticulumRnode.enable requires "reticulum-rnode" in services.mish.radio.providers.'';
       }
       {
         assertion = reticulumEnabled -> rnode.package != null;
-        message = "The reticulum-rnode provider requires services.vestaforge.radio.reticulumRnode.package, usually pkgs.rns after allowing the unfree Reticulum license in nixpkgs.";
+        message = "The reticulum-rnode provider requires services.mish.radio.reticulumRnode.package, usually pkgs.rns after allowing the unfree Reticulum license in nixpkgs.";
       }
     ];
 
@@ -75,24 +75,24 @@ in
         txPower = rnode.txPower;
         spreadingFactor = rnode.spreadingFactor;
         codingRate = rnode.codingRate;
-        service = "vestaforge-reticulum-rnode.service";
+        service = "mish-reticulum-rnode.service";
         configDir = "${cfg.stateDir}/reticulum";
       };
     };
 
-    environment.etc."vestaforge/reticulum-rnode/config".source = reticulumConfig;
+    environment.etc."mish/reticulum-rnode/config".source = reticulumConfig;
 
     environment.systemPackages = lib.optionals reticulumEnabled [ rnode.package ];
 
-    systemd.services.vestaforge-reticulum-rnode = lib.mkIf reticulumEnabled {
-      description = "VestaForge Reticulum RNode radio provider";
+    systemd.services.mish-reticulum-rnode = lib.mkIf reticulumEnabled {
+      description = "Mish Reticulum RNode radio provider";
       wantedBy = [ "multi-user.target" ];
       after = [ "network.target" ];
       serviceConfig = {
-        ExecStartPre = "${pkgs.coreutils}/bin/install -D -m 0600 /etc/vestaforge/reticulum-rnode/config ${cfg.stateDir}/reticulum/config";
+        ExecStartPre = "${pkgs.coreutils}/bin/install -D -m 0600 /etc/mish/reticulum-rnode/config ${cfg.stateDir}/reticulum/config";
         ExecStart = "${rnode.package}/bin/rnsd --config ${cfg.stateDir}/reticulum --service";
-        User = "vestaforge";
-        Group = "vestaforge";
+        User = "mish";
+        Group = "mish";
         Restart = "on-failure";
         RestartSec = "3s";
         UMask = "0077";

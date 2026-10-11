@@ -21,7 +21,7 @@ VALID_VISIBILITY = {"public", "friends", "private"}
 
 
 def utc_now() -> str:
-    fixed = os.environ.get("VF_FIXED_TIME")
+    fixed = os.environ.get("MISH_FIXED_TIME")
     if fixed:
         return fixed
     return (
@@ -33,7 +33,7 @@ def utc_now() -> str:
 
 
 def unix_now() -> int:
-    fixed = os.environ.get("VF_FIXED_UNIX_TIME")
+    fixed = os.environ.get("MISH_FIXED_UNIX_TIME")
     if fixed:
         return int(fixed)
     return int(time.time())
@@ -62,17 +62,17 @@ def deep_merge(base: dict[str, Any], overlay: dict[str, Any]) -> dict[str, Any]:
 
 
 def default_config(state_dir: str | None = None) -> dict[str, Any]:
-    state = state_dir or os.environ.get("VESTAFORGE_STATE_DIR", "/var/lib/vestaforge")
+    state = state_dir or os.environ.get("MISH_STATE_DIR", "/var/lib/mish")
     return {
         "version": VERSION,
         "profile": "mini-pc",
-        "domain": "vestaforge.local",
+        "domain": "mish.local",
         "nixDistribution": "nixos",
         "stateDir": state,
         "api": {"bindHost": "127.0.0.1", "port": 8787},
         "matrix": {
             "provider": "tuwunel",
-            "domain": "vestaforge.local",
+            "domain": "mish.local",
             "port": 6167,
             "homeserverUrl": "http://127.0.0.1:6167",
             "releaseGated": True,
@@ -92,7 +92,7 @@ def default_config(state_dir: str | None = None) -> dict[str, Any]:
             "simulator": {"enable": False},
             "reticulumRnode": {
                 "enable": False,
-                "interface": "VestaForge RNode",
+                "interface": "Mish RNode",
                 "port": "/dev/ttyACM0",
                 "mode": "access_point",
                 "frequency": 915000000,
@@ -107,7 +107,7 @@ def default_config(state_dir: str | None = None) -> dict[str, Any]:
 
 
 def load_config(config_path: str | None = None, state_dir: str | None = None) -> dict[str, Any]:
-    path = config_path or os.environ.get("VESTAFORGE_CONFIG", "/etc/vestaforge/config.json")
+    path = config_path or os.environ.get("MISH_CONFIG", "/etc/mish/config.json")
     base = default_config(state_dir)
     if path and Path(path).exists():
         with Path(path).open("r", encoding="utf-8") as fh:
@@ -168,7 +168,7 @@ def _slug(value: str) -> str:
     return cleaned or "geopack"
 
 
-class VestaForgeStore:
+class MishStore:
     def __init__(self, state_dir: str | Path, config: dict[str, Any] | None = None) -> None:
         self.state_dir = Path(state_dir)
         self.config = config or default_config(str(self.state_dir))
@@ -311,7 +311,7 @@ class VestaForgeStore:
 
     def _geopack_hash(self, waypoints: list[dict[str, Any]]) -> str:
         content = {
-            "format": "vestaforge-geopack-content",
+            "format": "mish-geopack-content",
             "waypoints": [self._content_projection(wp) for wp in sorted(waypoints, key=lambda wp: wp["id"])],
         }
         return "sha256:" + sha256_json(content)
@@ -403,7 +403,7 @@ class VestaForgeStore:
             "kind": 30078,
             "tags": [
                 ["d", manifest["id"]],
-                ["application", "vestaforge"],
+                ["application", "mish"],
                 ["format", "geopack-manifest"],
                 ["contentHash", manifest["contentHash"]],
             ],
@@ -471,7 +471,7 @@ def status_payload(config: dict[str, Any], include_probes: bool = True) -> dict[
         "ok": True,
         "version": config.get("version", VERSION),
         "profile": config.get("profile", "mini-pc"),
-        "domain": config.get("domain", "vestaforge.local"),
+        "domain": config.get("domain", "mish.local"),
         "nixDistribution": config.get("nixDistribution", "nixos"),
         "stateDir": config.get("stateDir"),
         "matrix": {

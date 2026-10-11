@@ -19,18 +19,19 @@ flowchart LR
 
 ## Evidence inventory
 
-The implementation is grounded in the existing repository, not the archived
-whitepaper's promised integrations.
+The implementation is grounded in the existing repository. The
+[design history](mish-design-history.md) records superseded concepts and
+deferred integrations separately.
 
 | Component | Repository evidence | Meaning and limit |
 |---|---|---|
-| NixOS composition | `modules/nixos/vestaforge/`, `nix/default.nix`, `hosts/` | Reusable options, package/check and image definitions; evaluation does not establish bootability |
-| Existing Python control | `apps/vfctl/src/vestaforge/` | CLI, validation, file storage and simulation reused alongside the event app |
+| NixOS composition | `modules/nixos/mish/`, `nix/default.nix`, `hosts/` | Reusable options, package/check and image definitions; evaluation does not establish bootability |
+| Existing Python control | `apps/mish/src/mish/` | CLI, validation, file storage and simulation reused alongside the event app |
 | Schemas and examples | `schemas/`, `examples/`, `catalog/` | Waypoint, GeoPack and catalog validation; not a complete event HTTP schema |
 | Matrix | `matrix_stub.py`, `matrix.nix` | Health stub; no Matrix message delivery |
 | OpenZiti | `openziti_stub.py`, `openziti.nix` | Health stub; no implemented enrollment or access enforcement |
 | Reticulum/RNode | `radio.nix` | Daemon configuration; no event application messaging bridge |
-| Original x86 image | `hosts/vestaforge-mini-pc/` | QEMU VM, not a disk installer |
+| Original x86 image | `hosts/mish-mini-pc/` | QEMU VM, not a disk installer |
 | Tests | `tests/`, flake `checks` | Separate test/evaluation/build/VM results must be reported explicitly |
 
 Before this implementation, the plan recorded nine passing Python tests and
@@ -56,9 +57,11 @@ with the source revision, command, environment and result.
    Snapshot restores quarantine pending sends: a backup cannot establish
    whether the original coordinator transmitted them after capture. Ordinary
    restarts retain their genuine pending queue.
-5. Retain existing CLI/module names. Keep simulation clearly labelled and
-   opt-in. Defer Matrix, OpenZiti, Nostr expansion, GeoPack expansion, Reticulum
-   messaging and additional board qualification.
+5. Use Mish consistently for the CLI, Python package, Nix modules, image
+   targets and runtime paths. The full rename is authorized before the first
+   deployment. Keep simulation clearly labelled and opt-in. Defer Matrix,
+   OpenZiti, Nostr expansion, GeoPack expansion, Reticulum messaging and
+   additional board qualification.
 6. Use NixOS 26.05 and stateVersion 26.05 for the supported appliance targets.
    The state version change is authorized because these hosts have never been
    deployed. Do not infer this is safe for an existing appliance's future

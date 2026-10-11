@@ -6,7 +6,7 @@
 }:
 
 let
-  cfg = config.services.vestaforge;
+  cfg = config.services.mish;
 in
 {
   imports = [
@@ -18,14 +18,14 @@ in
     ./radio.nix
   ];
 
-  options.services.vestaforge = {
-    enable = lib.mkEnableOption "the VestaForge alpha appliance control plane";
+  options.services.mish = {
+    enable = lib.mkEnableOption "the Mish alpha appliance control plane";
 
     package = lib.mkOption {
       type = lib.types.package;
-      default = pkgs.vestaforge-control;
-      defaultText = lib.literalExpression "pkgs.vestaforge-control";
-      description = "Package providing vfctl and VestaForge local service helpers.";
+      default = pkgs.mish-control;
+      defaultText = lib.literalExpression "pkgs.mish-control";
+      description = "Package providing mish and Mish local service helpers.";
     };
 
     profile = lib.mkOption {
@@ -41,7 +41,7 @@ in
 
     domain = lib.mkOption {
       type = lib.types.str;
-      default = "vestaforge.local";
+      default = "mish.local";
       description = "Primary appliance domain used by service capability modules.";
     };
 
@@ -56,7 +56,7 @@ in
 
     stateDir = lib.mkOption {
       type = lib.types.str;
-      default = "/var/lib/vestaforge";
+      default = "/var/lib/mish";
       description = "Persistent mutable state directory for keys, waypoints, GeoPacks, and publication outbox data.";
     };
 
@@ -88,7 +88,7 @@ in
       port = lib.mkOption {
         type = lib.types.port;
         default = 8787;
-        description = "Port for the local VestaForge control API.";
+        description = "Port for the local Mish control API.";
       };
     };
 
@@ -106,7 +106,7 @@ in
       domain = lib.mkOption {
         type = lib.types.str;
         default = cfg.domain;
-        defaultText = lib.literalExpression "config.services.vestaforge.domain";
+        defaultText = lib.literalExpression "config.services.mish.domain";
         description = "Matrix server domain.";
       };
 
@@ -217,7 +217,7 @@ in
       simulator.enable = lib.mkOption {
         type = lib.types.bool;
         default = builtins.elem "meshtastic-simulated" cfg.radio.providers;
-        defaultText = lib.literalExpression ''builtins.elem "meshtastic-simulated" config.services.vestaforge.radio.providers'';
+        defaultText = lib.literalExpression ''builtins.elem "meshtastic-simulated" config.services.mish.radio.providers'';
         description = "Enable simulator-first Meshtastic-like waypoint ingest.";
       };
 
@@ -225,7 +225,7 @@ in
         enable = lib.mkOption {
           type = lib.types.bool;
           default = builtins.elem "reticulum-rnode" cfg.radio.providers;
-          defaultText = lib.literalExpression ''builtins.elem "reticulum-rnode" config.services.vestaforge.radio.providers'';
+          defaultText = lib.literalExpression ''builtins.elem "reticulum-rnode" config.services.mish.radio.providers'';
           description = "Enable Reticulum over an RNode LoRa transceiver.";
         };
 
@@ -238,7 +238,7 @@ in
 
         interfaceName = lib.mkOption {
           type = lib.types.str;
-          default = "VestaForge RNode";
+          default = "Mish RNode";
           description = "Reticulum interface name rendered into the RNode configuration.";
         };
 
@@ -345,35 +345,31 @@ in
   };
 
   config = lib.mkIf cfg.enable {
-    services.vestaforge.matrix.provider = lib.mkDefault (
+    services.mish.matrix.provider = lib.mkDefault (
       if cfg.profile == "sbc-rpi4" then "conduit" else "tuwunel"
     );
-    services.vestaforge.matrix.domain = lib.mkDefault cfg.domain;
-    services.vestaforge.matrix.providers.tuwunel.enable = lib.mkDefault (
-      cfg.matrix.provider == "tuwunel"
-    );
-    services.vestaforge.matrix.providers.conduit.enable = lib.mkDefault (
-      cfg.matrix.provider == "conduit"
-    );
+    services.mish.matrix.domain = lib.mkDefault cfg.domain;
+    services.mish.matrix.providers.tuwunel.enable = lib.mkDefault (cfg.matrix.provider == "tuwunel");
+    services.mish.matrix.providers.conduit.enable = lib.mkDefault (cfg.matrix.provider == "conduit");
 
     environment.systemPackages = [ cfg.package ];
 
-    users.groups.vestaforge = { };
-    users.users.vestaforge = {
+    users.groups.mish = { };
+    users.users.mish = {
       isSystemUser = true;
-      group = "vestaforge";
+      group = "mish";
       home = cfg.stateDir;
       createHome = true;
     };
 
     systemd.tmpfiles.rules = [
-      "d ${cfg.stateDir} 0700 vestaforge vestaforge -"
-      "d ${cfg.stateDir}/waypoints 0700 vestaforge vestaforge -"
-      "d ${cfg.stateDir}/geopacks 0700 vestaforge vestaforge -"
-      "d ${cfg.stateDir}/keys 0700 vestaforge vestaforge -"
-      "d ${cfg.stateDir}/nostr 0700 vestaforge vestaforge -"
-      "d ${cfg.stateDir}/openziti 0700 vestaforge vestaforge -"
-      "d ${cfg.stateDir}/reticulum 0700 vestaforge vestaforge -"
+      "d ${cfg.stateDir} 0700 mish mish -"
+      "d ${cfg.stateDir}/waypoints 0700 mish mish -"
+      "d ${cfg.stateDir}/geopacks 0700 mish mish -"
+      "d ${cfg.stateDir}/keys 0700 mish mish -"
+      "d ${cfg.stateDir}/nostr 0700 mish mish -"
+      "d ${cfg.stateDir}/openziti 0700 mish mish -"
+      "d ${cfg.stateDir}/reticulum 0700 mish mish -"
     ];
   };
 }

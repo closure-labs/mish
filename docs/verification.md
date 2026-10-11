@@ -22,16 +22,17 @@ The automated checks establish behavior in their stated test environments.
 They do not qualify hardware, venue coverage, power-loss recovery or event
 operation. Use [acceptance.md](acceptance.md) to record those results.
 
-The locally built installer is:
+The historical installer built before the Mish namespace rename is:
 
 ```text
 /nix/store/bg485f8qvpflwhjph70wybrsz3bijgx8-nixos-minimal-26.05.20261010.6fcc160-x86_64-linux.iso/iso/nixos-minimal-26.05.20261010.6fcc160-x86_64-linux.iso
 SHA-256: 752c8325b07b8577249acd3c937d5564acb000f99739993166e73892dc7463da
 ```
 
-That source snapshot includes the final application and catalog; later evidence
-annotations and maintenance-workflow documentation were added after its build.
-Tagged release builds must generate their own manifests and checksums.
+That source snapshot predates the current CLI/module namespace and subsequent
+recovery work. It is retained as build evidence, not as the current Mish kit.
+Use artifacts and manifests from the revision being qualified; tagged release
+builds must generate their own manifests and checksums.
 
 ## Snapshot recovery continuation
 
@@ -39,7 +40,7 @@ The recovery implementation based on `fabce7e` was verified locally on
 2026-10-11 using:
 
 ```bash
-nix develop --command env PYTHONPATH=apps/vfctl/src python -m unittest discover -s tests
+nix develop --command env PYTHONPATH=apps/mish/src python -m unittest discover -s tests
 nix develop --command nix flake check --all-systems --no-build --accept-flake-config
 nix develop --command nix flake check -L --accept-flake-config
 ```

@@ -1,7 +1,7 @@
 { lib, pkgs, ... }:
 
 {
-  networking.hostName = "vestaforge-rpi5-nvme";
+  networking.hostName = "mish-rpi5-nvme";
   networking.firewall.enable = true;
   services.openssh.enable = true;
 
@@ -35,7 +35,7 @@
     };
 
     "/" = {
-      device = "/dev/disk/by-label/VESTAFORGE";
+      device = "/dev/disk/by-label/MISH";
       fsType = "ext4";
       options = [ "noatime" ];
     };
@@ -57,10 +57,10 @@
 
   hardware.enableRedistributableFirmware = lib.mkDefault true;
 
-  services.vestaforge = {
+  services.mish = {
     enable = true;
     profile = "sbc-rpi5-nvme";
-    domain = "vestaforge.local";
+    domain = "mish.local";
     nixDistribution = "nixos";
     matrix.provider = "conduit";
     nostr.relays = [ "mock://local" ];

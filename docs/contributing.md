@@ -7,8 +7,8 @@ qualification separate in reports.
 
 ```bash
 nix develop
-PYTHONPATH=apps/vfctl/src python -m unittest discover -s tests
-nix run .# -- internal-check-schemas --schemas schemas --examples examples --catalog catalog/vestaforge-catalog.json
+PYTHONPATH=apps/mish/src python -m unittest discover -s tests
+nix run .# -- internal-check-schemas --schemas schemas --examples examples --catalog catalog/mish-catalog.json
 nix flake check --no-build --all-systems
 nix flake check
 ```

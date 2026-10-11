@@ -1,7 +1,7 @@
 { config, lib, ... }:
 
 let
-  cfg = config.services.vestaforge;
+  cfg = config.services.mish;
   matrix = cfg.matrix;
   enabledProviders = lib.filter (provider: matrix.providers.${provider}.enable) [
     "tuwunel"
@@ -9,13 +9,13 @@ let
   ];
 
   mkMatrixService = provider: {
-    description = "VestaForge Matrix ${provider} provider health service";
+    description = "Mish Matrix ${provider} provider health service";
     wantedBy = [ "multi-user.target" ];
     after = [ "network.target" ];
     serviceConfig = {
-      ExecStart = "${cfg.package}/bin/vf-matrix-stub --provider ${provider} --domain ${lib.escapeShellArg matrix.domain} --host 127.0.0.1 --port ${toString matrix.port}";
-      User = "vestaforge";
-      Group = "vestaforge";
+      ExecStart = "${cfg.package}/bin/mish-matrix-stub --provider ${provider} --domain ${lib.escapeShellArg matrix.domain} --host 127.0.0.1 --port ${toString matrix.port}";
+      User = "mish";
+      Group = "mish";
       Restart = "on-failure";
       RestartSec = "2s";
       NoNewPrivileges = true;
@@ -32,11 +32,11 @@ in
         assertions = [
           {
             assertion = lib.length enabledProviders == 1;
-            message = "Exactly one VestaForge Matrix provider must be enabled for ${matrix.domain}; enabled providers: ${toString enabledProviders}";
+            message = "Exactly one Mish Matrix provider must be enabled for ${matrix.domain}; enabled providers: ${toString enabledProviders}";
           }
           {
             assertion = lib.elem matrix.provider enabledProviders;
-            message = "services.vestaforge.matrix.provider must match the enabled Matrix provider aspect.";
+            message = "services.mish.matrix.provider must match the enabled Matrix provider aspect.";
           }
         ];
 
@@ -63,11 +63,11 @@ in
       }
 
       (lib.mkIf matrix.providers.tuwunel.enable {
-        systemd.services.vestaforge-matrix-tuwunel = mkMatrixService "tuwunel";
+        systemd.services.mish-matrix-tuwunel = mkMatrixService "tuwunel";
       })
 
       (lib.mkIf matrix.providers.conduit.enable {
-        systemd.services.vestaforge-matrix-conduit = mkMatrixService "conduit";
+        systemd.services.mish-matrix-conduit = mkMatrixService "conduit";
       })
     ]
   );

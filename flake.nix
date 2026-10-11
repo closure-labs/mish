@@ -1,5 +1,5 @@
 {
-  description = "VestaForge 0.1 alpha NixOS appliance";
+  description = "Mish: offline event coordination on NixOS";
 
   inputs = {
     nixpkgs.url = "github:NixOS/nixpkgs/nixos-26.05";

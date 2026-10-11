@@ -1,7 +1,7 @@
 { config, lib, ... }:
 
 let
-  cfg = config.services.vestaforge;
+  cfg = config.services.mish;
   alphaReleaseProfiles = [
     "mini-pc"
     "sbc-rpi4"

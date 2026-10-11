@@ -5,8 +5,8 @@ import time
 import unittest
 from unittest.mock import patch
 
-from vestaforge.appliance import EventStore
-from vestaforge.radio import RadioWorker, SimulatorTransport
+from mish.appliance import EventStore
+from mish.radio import RadioWorker, SimulatorTransport
 
 
 class RadioTests(unittest.TestCase):
@@ -40,7 +40,7 @@ class RadioTests(unittest.TestCase):
                 raise ConnectionError("USB lost after write")
 
         worker = RadioWorker(self.store, self.config, Ambiguous)
-        with self.assertLogs("vestaforge.radio", level="WARNING"):
+        with self.assertLogs("mish.radio", level="WARNING"):
             worker.tick(0)
         self.assertEqual(self.store.record(record["id"])["state"], "uncertain")
         restarted = RadioWorker(EventStore(self.directory.name), self.config)
@@ -65,11 +65,11 @@ class RadioTests(unittest.TestCase):
             return SimulatorTransport(device, callback)
 
         worker = RadioWorker(self.store, self.config, factory)
-        with self.assertLogs("vestaforge.radio", level="WARNING"):
+        with self.assertLogs("mish.radio", level="WARNING"):
             worker.tick(0)
         worker.tick(0.5)
         self.assertEqual(len(attempts), 1)
-        with self.assertLogs("vestaforge.radio", level="WARNING"):
+        with self.assertLogs("mish.radio", level="WARNING"):
             worker.tick(1)
         worker.tick(2.9)
         self.assertEqual(len(attempts), 2)
@@ -171,7 +171,7 @@ class RadioTests(unittest.TestCase):
         expires = self.store.record(alert["id"])["expires"]
         snapshot = self.store.pending()
         worker = RadioWorker(self.store, self.config)
-        with patch.object(self.store, "pending", return_value=snapshot), patch("vestaforge.radio.time.time", return_value=expires + 1):
+        with patch.object(self.store, "pending", return_value=snapshot), patch("mish.radio.time.time", return_value=expires + 1):
             worker.tick(0)
         self.assertEqual(worker.transport.sent, [])
         self.assertEqual(self.store.record(alert["id"])["state"], "expired")

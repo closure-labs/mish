@@ -4,7 +4,7 @@ import asyncio
 from pathlib import Path
 from aiohttp import web
 from .appliance import EventStore
-from .storage import VestaForgeStore
+from .storage import MishStore
 
 EVENTS = web.AppKey("events", EventStore)
 RADIO = web.AppKey("radio", object)
@@ -45,7 +45,7 @@ def operator(request):
         raise web.HTTPForbidden()
 
 
-def create_app(store: VestaForgeStore, config):
+def create_app(store: MishStore, config):
     app = web.Application(middlewares=[guard], client_max_size=16384)
     events = EventStore(store.state_dir, config.get('queueLimit', 1000))
     app[EVENTS] = events

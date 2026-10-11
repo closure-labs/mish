@@ -5,7 +5,7 @@
     "${modulesPath}/virtualisation/qemu-vm.nix"
   ];
 
-  networking.hostName = "vestaforge-mini-pc";
+  networking.hostName = "mish-mini-pc";
   networking.firewall.enable = true;
 
   nix.settings.experimental-features = [
@@ -18,10 +18,10 @@
     pkgs.jq
   ];
 
-  services.vestaforge = {
+  services.mish = {
     enable = true;
     profile = "mini-pc";
-    domain = "vestaforge.local";
+    domain = "mish.local";
     matrix.provider = "tuwunel";
     nostr.relays = [ "mock://local" ];
     openziti.enable = false;

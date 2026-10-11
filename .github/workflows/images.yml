@@ -18,10 +18,10 @@ jobs:
         include:
           - runner: ubuntu-24.04
             system: x86_64-linux
-            targets: vestaforge-mini-pc-image vestaforge-mini-pc-installer
+            targets: mish-mini-pc-image mish-mini-pc-installer
           - runner: ubuntu-24.04-arm
             system: aarch64-linux
-            targets: vestaforge-rpi4-image
+            targets: mish-rpi4-image
     runs-on: ${{ matrix.runner }}
     timeout-minutes: 240
     steps:
