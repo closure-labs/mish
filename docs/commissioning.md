@@ -237,17 +237,45 @@ credential files and legacy VestaForge state/keys if used. Export the radio's
 configuration separately and protect its private channel key. Protect all
 backup media as private event data.
 
-To restore, keep the old coordinator stopped before activating a spare. Stop
-`vestaforge-control`, preserve the existing state directory as a recovery copy,
-and replace `events.sqlite` with the consistent backup. Remove stale
-`events.sqlite-wal` and `events.sqlite-shm` only while the service is stopped;
-they belong to the replaced database. Set the database owner to
-`vestaforge:vestaforge` and mode `0600`. Restore the corresponding local config
-and CA data while Caddy is stopped, preserving their owners/modes. Start Caddy
-and `vestaforge-control`, verify authenticated staff history and public feed,
-and check radio status before sending. Credentials from that backup remain
-valid; revoke/re-enroll any exposed identity. A spare must reuse the LAN/DNS
-address deliberately and only one coordinator is active at a time.
+To restore, keep the old coordinator stopped before activating a spare. Copy
+the standalone backup to protected local storage outside the active state
+directory, readable by `vestaforge`. Stop the application and preserve its
+entire existing state directory, including any SQLite sidecars. Choose a new
+recovery-copy name each time; the example requires that name to be absent:
+
+```bash
+sudo systemctl stop vestaforge-control
+sudo test ! -e /var/lib/vestaforge-before-restore
+sudo mv -T /var/lib/vestaforge /var/lib/vestaforge-before-restore
+sudo install -d -m 0700 -o vestaforge -g vestaforge /var/lib/vestaforge
+sudo -u vestaforge vfctl --config /etc/vestaforge/config.json restore --input /protected-local-storage/event.sqlite
+```
+
+Check each command succeeded before continuing. On a fresh spare without an
+existing state directory, omit the `mv` step. `restore` validates the database
+and required journal schema, stages a private `0600` database, and installs it
+atomically. It refuses existing event databases or SQLite sidecars and never
+overwrites them. Supply a backup produced by `vfctl backup`, rather than
+copying a live database. Invalid input leaves no installed event database.
+Record the command's snapshot SHA-256, recovery time and quarantined count;
+the database retains these in its recovery history.
+
+A snapshot cannot establish whether queued messages were sent after its
+capture. Restored `queued` and `sending` records therefore become `uncertain`
+and are never transmitted automatically. Previously recorded submission,
+transport confirmation and human acknowledgements are preserved. Review
+uncertain records with staff before deliberately creating replacements. An
+ordinary restart of the same database continues draining its pending queue.
+
+Restore the corresponding local config and CA data while Caddy is stopped,
+preserving their owners/modes. Start Caddy and `vestaforge-control`, verify
+authenticated staff history and public feed, and check radio status before
+sending a new test message. Credentials from that backup remain valid;
+revoke/re-enroll any exposed identity. A spare must reuse the LAN/DNS address
+deliberately and only one coordinator is active at a time. Retain the previous
+state and backup until recovery has been verified. Snapshot recovery restores
+only data present when the backup was captured; later writes require recovery
+of the original state or independent records.
 
 ## Updates, rollback, retention and wipe
 

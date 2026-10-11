@@ -16,30 +16,35 @@ def text_value(value, limit=160):
     return value.strip()
 
 
+def initialize_schema(db):
+    """Keep the runtime schema and snapshot compatibility reference identical."""
+    db.executescript('''
+        PRAGMA journal_mode=WAL;
+        CREATE TABLE IF NOT EXISTS staff(id TEXT PRIMARY KEY,name TEXT,role TEXT,hash TEXT UNIQUE);
+        CREATE TABLE IF NOT EXISTS records(id TEXT PRIMARY KEY,text TEXT,kind TEXT,author TEXT,
+            created REAL,expires REAL,responder TEXT,state TEXT,packet_id TEXT);
+        CREATE TABLE IF NOT EXISTS acks(record_id TEXT,actor TEXT,source TEXT,node TEXT,channel INTEGER,
+            created REAL, UNIQUE(record_id,actor,source,node,channel));
+        CREATE TABLE IF NOT EXISTS received(packet_id TEXT,node TEXT,channel INTEGER,created REAL,
+            UNIQUE(packet_id,node,channel));
+        CREATE TABLE IF NOT EXISTS announcements(id TEXT PRIMARY KEY,text TEXT,published REAL);
+    ''')
+    record_columns = {row[1] for row in db.execute('PRAGMA table_info(records)')}
+    for column in ('submitted_at', 'confirmed_at', 'uncertain_at'):
+        if column not in record_columns:
+            db.execute(f'ALTER TABLE records ADD COLUMN {column} REAL')
+    columns = {row[1] for row in db.execute('PRAGMA table_info(received)')}
+    if 'created' not in columns:
+        db.execute('ALTER TABLE received ADD COLUMN created REAL DEFAULT 0')
+
+
 class EventStore:
     def __init__(self, state_dir, queue_limit=1000, recover=True):
         self.path = Path(state_dir) / 'events.sqlite'
         self.path.parent.mkdir(parents=True, exist_ok=True)
         self.queue_limit = queue_limit
         with self.connect() as db:
-            db.executescript('''
-                PRAGMA journal_mode=WAL;
-                CREATE TABLE IF NOT EXISTS staff(id TEXT PRIMARY KEY,name TEXT,role TEXT,hash TEXT UNIQUE);
-                CREATE TABLE IF NOT EXISTS records(id TEXT PRIMARY KEY,text TEXT,kind TEXT,author TEXT,
-                    created REAL,expires REAL,responder TEXT,state TEXT,packet_id TEXT);
-                CREATE TABLE IF NOT EXISTS acks(record_id TEXT,actor TEXT,source TEXT,node TEXT,channel INTEGER,
-                    created REAL, UNIQUE(record_id,actor,source,node,channel));
-                CREATE TABLE IF NOT EXISTS received(packet_id TEXT,node TEXT,channel INTEGER,created REAL,
-                    UNIQUE(packet_id,node,channel));
-                CREATE TABLE IF NOT EXISTS announcements(id TEXT PRIMARY KEY,text TEXT,published REAL);
-            ''')
-            record_columns = {row[1] for row in db.execute('PRAGMA table_info(records)')}
-            for column in ('submitted_at', 'confirmed_at', 'uncertain_at'):
-                if column not in record_columns:
-                    db.execute(f'ALTER TABLE records ADD COLUMN {column} REAL')
-            columns = {row[1] for row in db.execute('PRAGMA table_info(received)')}
-            if 'created' not in columns:
-                db.execute('ALTER TABLE received ADD COLUMN created REAL DEFAULT 0')
+            initialize_schema(db)
         os.chmod(self.path, 0o600)
         # A crash during a send has unknown RF outcome; never resend automatically.
         if recover:

@@ -44,6 +44,8 @@ def build_parser() -> argparse.ArgumentParser:
     publish.add_argument("--text", required=True)
     backup = sub.add_parser("backup", help="Create consistent SQLite backup including credentials")
     backup.add_argument("--output", required=True)
+    restore = sub.add_parser("restore", help="Restore standalone event backup into fresh state; stop service first")
+    restore.add_argument("--input", required=True)
     sub.add_parser("messages", help="List private local journal")
     sub.add_parser("prune", help="Apply configured event retention")
     wipe = sub.add_parser("wipe", help="Explicit end-of-event deletion; stop service first")
@@ -189,6 +191,11 @@ def main(argv: list[str] | None = None) -> int:
     parser = build_parser()
     args = parser.parse_args(argv)
     try:
+        if args.command == "restore":
+            from .recovery import restore_snapshot
+            config = load_config(args.config, args.state_dir)
+            print_json(restore_snapshot(args.input, config["stateDir"]))
+            return 0
         if args.command in {"commission", "enroll", "revoke", "message", "alert", "ack", "announce", "backup", "messages", "prune", "wipe"}:
             from .appliance import EventStore
             config = load_config(args.config, args.state_dir)
