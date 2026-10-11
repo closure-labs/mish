@@ -57,4 +57,26 @@ The Checks workflow repeats these gates natively on x86 and ARM and retains
 evaluation/build logs with the tested source revision and architecture.
 Recovery revision `c91498b` passed both native jobs in
 [Checks run 38172407182](https://github.com/closure-labs/mish/actions/runs/38172407182).
-Its image realization and physical acceptance remain separate.
+The merged recovery revision `9c5d002` also passed native x86 and ARM image
+realization in [Images run 38173136571](https://github.com/closure-labs/mish/actions/runs/38173136571),
+including the x86 VM/installer and Pi 4 SD image. Physical acceptance remains
+separate.
+
+## Automatic merge queue continuation
+
+The suite now contains 43 passing Python tests, including five queue-policy
+tests. All-system evaluation and native x86 flake checks passed locally through
+`nix develop`. Independent security review approved the automation after
+restricting automatic admission to branches in this repository.
+
+Queue automation revision `67c3347` passed both native GitHub jobs in
+[Checks run 38173427998](https://github.com/closure-labs/mish/actions/runs/38173427998).
+The queue's combined revision `fb6db84` passed both jobs in
+[merge-group run 38173802058](https://github.com/closure-labs/mish/actions/runs/38173802058)
+and [PR #8](https://github.com/closure-labs/mish/pull/8) merged. The active ruleset
+requires both native checks, uses an ALLGREEN queue and grants no bypass actors.
+
+This verification-record update is submitted without manual queue enrollment
+to exercise the installed workflow. Its PR timeline and Merge queue Actions run
+record automatic admission separately from the bootstrap PR's validation.
+See [merge-queue.md](merge-queue.md) for eligibility, permissions and retry behavior.

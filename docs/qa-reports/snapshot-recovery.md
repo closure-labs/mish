@@ -48,6 +48,8 @@ and a private state directory. Stop the service and preserve the old state
 before restoring. Keep one coordinator active. It restores only records in
 the snapshot and requires separate configuration/CA/radio-key recovery.
 
-Updated image builds and physical M2–M5 acceptance remain separate. No release was published and no
+The merged recovery revision `9c5d002` passed x86 VM/installer and Pi 4 SD image
+realization in [Images run 38173136571](https://github.com/closure-labs/mish/actions/runs/38173136571).
+Physical M2–M5 acceptance remains separate. No release was published and no
 physical commissioning, USB/RF, power-loss or eight-hour rehearsal result is
 claimed by this software gate.
