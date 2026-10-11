@@ -10,7 +10,7 @@ use crate::{
 };
 use anyhow::Result;
 use base64::{Engine, engine::general_purpose::URL_SAFE_NO_PAD};
-use rand::{RngCore, rngs::OsRng};
+use rand::{TryRng, rngs::SysRng};
 use rusqlite::{Connection, OptionalExtension, Row, TransactionBehavior, params};
 use sha2::{Digest, Sha256};
 use std::{
@@ -27,10 +27,10 @@ pub fn now() -> f64 {
         .as_secs_f64()
 }
 
-fn random_hex(bytes: usize) -> String {
+fn random_hex(bytes: usize) -> Result<String> {
     let mut data = vec![0; bytes];
-    OsRng.fill_bytes(&mut data);
-    hex::encode(data)
+    SysRng.try_fill_bytes(&mut data)?;
+    Ok(hex::encode(data))
 }
 
 pub fn initialize_schema(db: &Connection) -> Result<()> {
@@ -175,9 +175,9 @@ impl EventStore {
     pub fn enroll(&self, name: &str, role: Role, first: bool) -> Result<Enrollment> {
         let name = StaffName::new(name)?.as_str().to_owned();
         let mut token_bytes = [0u8; 32];
-        OsRng.fill_bytes(&mut token_bytes);
+        SysRng.try_fill_bytes(&mut token_bytes)?;
         let token = URL_SAFE_NO_PAD.encode(token_bytes);
-        let id = random_hex(8);
+        let id = random_hex(8)?;
         let mut db = self.connect()?;
         let transaction = db.transaction_with_behavior(TransactionBehavior::Immediate)?;
         if first
@@ -271,7 +271,7 @@ impl EventStore {
             return Err(invalid("outbound queue full; message was not accepted"));
         }
         let id = loop {
-            let candidate = random_hex(4).to_uppercase();
+            let candidate = random_hex(4)?.to_uppercase();
             if !transaction.query_row(
                 "SELECT EXISTS(SELECT 1 FROM records WHERE id=?)",
                 [&candidate],
@@ -367,7 +367,7 @@ impl EventStore {
 
     pub fn publish(&self, text: &str) -> Result<Announcement> {
         let text = AnnouncementText::new(text)?.as_str().to_owned();
-        let id = random_hex(8);
+        let id = random_hex(8)?;
         let published = now();
         self.connect()?.execute(
             "INSERT INTO announcements VALUES(?,?,?)",
@@ -501,7 +501,7 @@ impl EventStore {
                 )?;
             }
         } else {
-            transaction.execute("INSERT INTO records(id,text,kind,author,created,expires,responder,state,packet_id) VALUES(?,?,'message',?,?,NULL,NULL,'received',?)", params![format!("RF-{}", random_hex(8)), text, format!("radio:{node}:channel:{channel}"), now(), packet_id])?;
+            transaction.execute("INSERT INTO records(id,text,kind,author,created,expires,responder,state,packet_id) VALUES(?,?,'message',?,?,NULL,NULL,'received',?)", params![format!("RF-{}", random_hex(8)?), text, format!("radio:{node}:channel:{channel}"), now(), packet_id])?;
         }
         transaction.commit()?;
         Ok(true)
