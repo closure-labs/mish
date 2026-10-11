@@ -4,6 +4,7 @@ import json
 import os
 from pathlib import Path
 import subprocess
+import sys
 import tempfile
 import unittest
 
@@ -37,14 +38,14 @@ class CacheOutputsTests(unittest.TestCase):
                    ' print("/nix/store/test-mish\\n/nix/store/test-proof\\n/nix/store/test-shell")\n'
                    'elif sys.argv[1] == "path-info": print(os.environ["TEST_PROOF"])\n'
                    'else: sys.exit(19)\n',
-            'git': '#!/usr/bin/env bash\nprintf "revision-fixture\\n"\n',
+            'git': '#!/usr/bin/env python3\nprint("revision-fixture")\n',
             'cachix': '#!/usr/bin/env python3\n'
                       'import json, os, pathlib, sys\n'
                       'pathlib.Path(os.environ["TEST_PUSH"]).write_text(json.dumps(sys.argv[1:]))\n',
         }
         for name, content in scripts.items():
             path = binary / name
-            path.write_text(content)
+            path.write_text(content.replace('#!/usr/bin/env python3', f'#!{sys.executable}'))
             path.chmod(0o755)
         environment = dict(os.environ, PATH=str(binary) + os.pathsep + os.environ['PATH'],
                            SYSTEM='x86_64-linux', TEST_PROOF=str(proof),
