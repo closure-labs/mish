@@ -7,12 +7,26 @@ not current contributor instructions. The current runtime is Rust; use
 
 ## Rust runtime continuation
 
-The Rust implementation has compiled and its 35 tests passed locally. It uses
-Axum, Clap, a bounded Tokio coordinator, SQLite and native Meshtastic serial
-framing; the appliance runtime contains no Python application package.
-Port-specific Nix package, booted VM, image and GitHub results remain pending
-until recorded against the Rust revision. Physical qualification remains
-unperformed.
+The Rust implementation passes 38 behavioral tests. It uses Axum, Clap, a
+bounded Tokio coordinator, SQLite and native Meshtastic serial framing. The
+compiled appliance runtime contains no Python application package.
+
+| Validation | Result | Scope |
+|---|---|---|
+| Rust tests, formatting and Clippy | Passed | 38 tests, including 7,776 generated delivery histories, typed HTTP access/input checks, radio framing/uncertainty and snapshot recovery |
+| All-system Nix evaluation | Passed | Linux x86/ARM and Darwin evaluation; no cross-architecture realization implied |
+| Native x86 Nix package and checks | Passed | Application source at `c04f529`; CLI negative coordinates, schemas, workflow lint and module policies |
+| Booted x86 appliance VM | Passed | HTTPS trust, two staff identities, alert ACK, restart and snapshot restore without outbound replay; test script completed in 18.95 seconds |
+| Compiled runtime closure | Passed | 10 store paths, including SQLite and stub shell wrappers; no Python runtime |
+| Repository queue helper | Passed | Nine tests after incorporating the GitHub App admission correction |
+| Native GitHub x86 and ARM checks | Passed on `1d7d68d` | [Checks run 38177392268](https://github.com/closure-labs/mish/actions/runs/38177392268), including the x86 VM |
+| Rust appliance images | Pending main image run | Follow [Images](https://github.com/closure-labs/mish/actions/workflows/images.yml); realization and physical qualification remain separate gates |
+
+The automatic admission correction merged in
+[PR #13](https://github.com/closure-labs/mish/pull/13). App registration,
+repository-only installation and the documented Actions variable/secret remain
+operator setup; an absent App configuration fails before queue mutation.
+Physical USB/RF operation, Pi commissioning and rehearsal remain unperformed.
 
 These results concern the implementation working tree on 2026-10-11. Release
 automation must repeat checks against its tagged revision and record artifact

@@ -9,7 +9,7 @@ qualification separate in reports.
 nix develop --command cargo fmt --manifest-path apps/mish/Cargo.toml --all -- --check
 nix develop --command cargo clippy --manifest-path apps/mish/Cargo.toml --all-targets --locked -- -D warnings
 nix develop --command cargo test --manifest-path apps/mish/Cargo.toml --all-targets --locked
-nix develop --command mish internal-check-schemas --schemas schemas --examples examples --catalog catalog/mish-catalog.json
+nix develop --command cargo run --manifest-path apps/mish/Cargo.toml --locked -- internal-check-schemas --schemas schemas --examples examples --catalog catalog/mish-catalog.json
 nix develop --command nix flake check --no-build --all-systems
 nix develop --command nix flake check
 ```

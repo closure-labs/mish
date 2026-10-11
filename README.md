@@ -89,10 +89,9 @@ delivery-state boundaries.
 
 Native x86 and ARM checks, image realization and booted x86 VM application tests
 passed for the earlier revisions recorded in the
-[verification log](docs/verification.md). The Rust runtime has compiled and its
-35-test suite has passed; Rust package, appliance VM and image checks are
-separate gates whose results must be recorded against the port revision.
-Physical installation, USB/RF
+[verification log](docs/verification.md). The Rust runtime's 38 tests, compiled
+Nix package and booted appliance VM checks have passed locally. Native GitHub
+and image results are recorded per revision. Physical installation, USB/RF
 interoperability, Pi 4 commissioning and an eight-hour event rehearsal remain
 unverified. This is a prototype for qualification, with draft releases gated
 on physical acceptance.
