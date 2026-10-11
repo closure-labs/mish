@@ -40,6 +40,14 @@ in
   config = lib.mkIf cfg.enable {
     assertions = [
       {
+        assertion = radio.meshtastic.enable -> lib.hasPrefix "/dev/serial/by-id/" radio.meshtastic.device;
+        message = "Meshtastic USB must use a stable /dev/serial/by-id path.";
+      }
+      {
+        assertion = !(radio.meshtastic.enable && radio.simulator.enable);
+        message = "Select either physical Meshtastic or the explicit simulator.";
+      }
+      {
         assertion = radio.simulator.enable -> builtins.elem "meshtastic-simulated" radio.providers;
         message = ''services.vestaforge.radio.simulator.enable requires "meshtastic-simulated" in services.vestaforge.radio.providers.'';
       }
@@ -57,7 +65,7 @@ in
       providers = radio.providers;
       simulatorEnabled = radio.simulator.enable;
       reticulumRnodeEnabled = rnode.enable;
-      hardwareMeshtasticEnabled = false;
+      hardwareMeshtasticEnabled = radio.meshtastic.enable;
       reticulumRnode = {
         interface = rnode.interfaceName;
         port = rnode.port;

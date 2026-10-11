@@ -24,9 +24,10 @@
     domain = "vestaforge.local";
     matrix.provider = "tuwunel";
     nostr.relays = [ "mock://local" ];
-    openziti.enable = true;
-    geopack.enable = true;
-    radio.simulator.enable = true;
+    openziti.enable = false;
+    geopack.enable = false;
+    radio.simulator.enable = false;
+    localAccess.enable = true;
   };
 
   virtualisation.vmVariant = {
@@ -34,5 +35,5 @@
     virtualisation.cores = 2;
   };
 
-  system.stateVersion = "25.05";
+  system.stateVersion = "26.05";
 }

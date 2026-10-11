@@ -7,6 +7,7 @@ import hmac
 import json
 import os
 import secrets
+import re
 import tempfile
 import time
 import urllib.parse
@@ -77,17 +78,18 @@ def default_config(state_dir: str | None = None) -> dict[str, Any]:
             "releaseGated": True,
         },
         "openziti": {
-            "enable": True,
+            "enable": False,
             "controllerUrl": "http://127.0.0.1:1280",
             "edgeRouterUrl": "http://127.0.0.1:3022",
             "privilegedMfaRequired": True,
             "serviceIdentities": ["matrix", "geopack", "admin-api"],
         },
-        "geopack": {"enable": True},
+        "geopack": {"enable": False},
         "nostr": {"relays": []},
         "radio": {
-            "providers": ["meshtastic-simulated"],
-            "simulator": {"enable": True},
+            "adapter": "disabled",
+            "providers": [],
+            "simulator": {"enable": False},
             "reticulumRnode": {
                 "enable": False,
                 "interface": "VestaForge RNode",
@@ -117,14 +119,17 @@ def load_config(config_path: str | None = None, state_dir: str | None = None) ->
 
 
 def ensure_visibility(value: str) -> str:
-    if value not in VALID_VISIBILITY:
+    if not isinstance(value, str) or value not in VALID_VISIBILITY:
         raise ValueError(f"visibility must be one of: {', '.join(sorted(VALID_VISIBILITY))}")
     return value
 
 
 def validate_position(lat: float, lon: float) -> tuple[float, float]:
-    lat_f = float(lat)
-    lon_f = float(lon)
+    try:
+        lat_f = float(lat)
+        lon_f = float(lon)
+    except (ValueError, TypeError):
+        raise ValueError("position requires numeric latitude and longitude") from None
     if not -90.0 <= lat_f <= 90.0:
         raise ValueError("latitude must be between -90 and 90")
     if not -180.0 <= lon_f <= 180.0:
@@ -149,6 +154,12 @@ def _atomic_write_json(path: Path, value: Any, mode: int = 0o600) -> None:
 def _read_json(path: Path) -> Any:
     with path.open("r", encoding="utf-8") as fh:
         return json.load(fh)
+
+
+def safe_identifier(value: str) -> str:
+    if not isinstance(value, str) or not re.fullmatch(r"[A-Za-z0-9][A-Za-z0-9_-]{0,127}", value):
+        raise ValueError("identifier must contain 1–128 ASCII letters, digits, hyphens or underscores")
+    return value
 
 
 def _slug(value: str) -> str:
@@ -176,10 +187,10 @@ class VestaForgeStore:
             directory.mkdir(parents=True, exist_ok=True)
 
     def waypoint_path(self, waypoint_id: str) -> Path:
-        return self.waypoints_dir / f"{waypoint_id}.json"
+        return self.waypoints_dir / f"{safe_identifier(waypoint_id)}.json"
 
     def geopack_path(self, pack_id: str) -> Path:
-        return self.geopacks_dir / f"{pack_id}.json"
+        return self.geopacks_dir / f"{safe_identifier(pack_id)}.json"
 
     def signing_key_path(self) -> Path:
         return self.keys_dir / "geopack-signing.key"
@@ -318,9 +329,11 @@ class VestaForgeStore:
         visibility: str = "private",
         pack_id: str | None = None,
     ) -> tuple[dict[str, Any], bool]:
-        if not name.strip():
+        if not isinstance(name, str) or not name.strip():
             raise ValueError("GeoPack name is required")
         visibility = ensure_visibility(visibility)
+        if not isinstance(waypoint_ids, list) or not all(isinstance(i, str) for i in waypoint_ids):
+            raise ValueError("waypoint IDs must be a list of strings")
         ids = sorted(dict.fromkeys(waypoint_ids))
         if not ids:
             raise ValueError("at least one waypoint is required")
@@ -404,7 +417,7 @@ class VestaForgeStore:
 
     def _publish_to_relay(self, relay: str, event: dict[str, Any], pack_id: str) -> dict[str, Any]:
         if relay.startswith("mock://"):
-            target = self.publications_dir / f"{pack_id}.json"
+            target = self.publications_dir / f"{safe_identifier(pack_id)}.json"
             _atomic_write_json(target, {"relay": relay, "event": event})
             return {"relay": relay, "status": "stored", "path": str(target)}
         if relay.startswith("file://"):
@@ -417,7 +430,7 @@ class VestaForgeStore:
                     fh.write("\n")
                 return {"relay": relay, "status": "appended", "path": str(target)}
             target.mkdir(parents=True, exist_ok=True)
-            file_target = target / f"{pack_id}.json"
+            file_target = target / f"{safe_identifier(pack_id)}.json"
             _atomic_write_json(file_target, {"relay": relay, "event": event})
             return {"relay": relay, "status": "stored", "path": str(file_target)}
         outbox = self.publications_dir / f"{pack_id}.outbox.json"

@@ -60,11 +60,29 @@ in
       description = "Persistent mutable state directory for keys, waypoints, GeoPacks, and publication outbox data.";
     };
 
+    coordinatorId = lib.mkOption {
+      type = lib.types.str;
+      default = "coordinator-1";
+      description = "Identity of the single authoritative event coordinator.";
+    };
+    retentionDays = lib.mkOption {
+      type = lib.types.ints.positive;
+      default = 7;
+      description = "Days of event records retained before operator cleanup.";
+    };
+    localAccess = {
+      enable = lib.mkEnableOption "Caddy HTTPS through an external Ethernet access point";
+      hostName = lib.mkOption {
+        type = lib.types.str;
+        default = "mish.home.arpa";
+        description = "Local DNS name provided by the external access point.";
+      };
+    };
     api = {
       bindHost = lib.mkOption {
         type = lib.types.str;
         default = "127.0.0.1";
-        description = "Address for the local control API. OpenZiti is expected to expose this service remotely.";
+        description = "Address for the local control API. Caddy exposes the authenticated application on the local LAN.";
       };
 
       port = lib.mkOption {
@@ -75,6 +93,7 @@ in
     };
 
     matrix = {
+      enable = lib.mkEnableOption "legacy Matrix health simulation";
       provider = lib.mkOption {
         type = lib.types.enum [
           "tuwunel"
@@ -115,7 +134,7 @@ in
     openziti = {
       enable = lib.mkOption {
         type = lib.types.bool;
-        default = true;
+        default = false;
         description = "Enable the OpenZiti baseline controller and edge-router services.";
       };
 
@@ -168,14 +187,33 @@ in
       providers = lib.mkOption {
         type = lib.types.listOf (
           lib.types.enum [
+            "meshtastic-usb"
             "meshtastic-simulated"
             "reticulum-rnode"
           ]
         );
-        default = [ "meshtastic-simulated" ];
+        default = [ ];
         description = "Radio edge providers enabled for waypoint and field-network integration.";
       };
 
+      meshtastic = {
+        enable = lib.mkEnableOption "Meshtastic USB application transport";
+        device = lib.mkOption {
+          type = lib.types.str;
+          default = "/dev/serial/by-id/REPLACE-WITH-RADIO-ID";
+          description = "Stable USB radio device path; configure the private channel on the radio during commissioning.";
+        };
+        channel = lib.mkOption {
+          type = lib.types.ints.between 0 7;
+          default = 0;
+          description = "Configured private staff channel index.";
+        };
+        sendIntervalSeconds = lib.mkOption {
+          type = lib.types.ints.positive;
+          default = 30;
+          description = "Minimum interval between radio submissions, to limit channel congestion.";
+        };
+      };
       simulator.enable = lib.mkOption {
         type = lib.types.bool;
         default = builtins.elem "meshtastic-simulated" cfg.radio.providers;

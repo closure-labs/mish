@@ -29,6 +29,22 @@ in
 
   nixosModules.vestaforge = ../modules/nixos/vestaforge;
 
+  nixosConfigurations.vestaforge-mini-pc-installer = lib.nixosSystem {
+    system = "x86_64-linux";
+    modules = [
+      ({ modulesPath, pkgs, ... }: {
+        imports = [ "${modulesPath}/installer/cd-dvd/installation-cd-minimal.nix" ];
+        nixpkgs.overlays = [ self.overlays.default ];
+        environment.systemPackages = [
+          pkgs.vestaforge-control
+          pkgs.git
+          pkgs.gh
+        ];
+        environment.etc."vestaforge-source".source = self;
+        system.stateVersion = "26.05";
+      })
+    ];
+  };
   nixosConfigurations.vestaforge-mini-pc = lib.nixosSystem {
     system = "x86_64-linux";
     modules = [
@@ -82,6 +98,8 @@ in
       pkgs = pkgsFor system;
       images = {
         x86_64-linux = {
+          vestaforge-mini-pc-installer =
+            self.nixosConfigurations.vestaforge-mini-pc-installer.config.system.build.isoImage;
           vestaforge-image = self.nixosConfigurations.vestaforge-mini-pc.config.system.build.vm;
           vestaforge-mini-pc-image = self.nixosConfigurations.vestaforge-mini-pc.config.system.build.vm;
         };
@@ -119,7 +137,10 @@ in
         packages = [
           pkgs.git
           pkgs.nix
-          pkgs.python3
+          pkgs.nixfmt
+          (pkgs.python3.withPackages (
+            ps: [ ps.aiohttp ] ++ lib.optionals pkgs.stdenv.hostPlatform.isLinux [ ps.meshtastic ]
+          ))
           pkgs.vestaforge-control
         ];
       };
@@ -166,10 +187,11 @@ in
               )
               self.nixosModules.vestaforge
               {
-                system.stateVersion = "25.05";
+                system.stateVersion = "26.05";
                 services.vestaforge = {
                   enable = true;
                   matrix = {
+                    enable = true;
                     provider = "tuwunel";
                     providers = {
                       tuwunel.enable = true;
@@ -198,7 +220,7 @@ in
               )
               self.nixosModules.vestaforge
               {
-                system.stateVersion = "25.05";
+                system.stateVersion = "26.05";
                 services.vestaforge = {
                   enable = true;
                   radio = {
@@ -218,12 +240,28 @@ in
         profilePrimaryAcceptance =
           if profileConfig.den.quirks.meshServices.profile.primaryAcceptanceTarget then "1" else "0";
         commonChecks = {
+          workflows =
+            pkgs.runCommand "vestaforge-workflows-check"
+              {
+                nativeBuildInputs = [ pkgs.actionlint ];
+              }
+              ''
+                actionlint ${../.github}/workflows/*.yml
+                touch "$out"
+              '';
+          formatting =
+            pkgs.runCommand "vestaforge-format-check" { nativeBuildInputs = [ pkgs.nixfmt-rfc-style ]; }
+              ''
+                find ${../.} -name '*.nix' -print0 | xargs -0 nixfmt --check
+                touch "$out"
+              '';
+
           module-eval =
             pkgs.runCommand "vestaforge-${profileConfig.services.vestaforge.profile}-module-eval-check"
               {
                 profile = profileConfig.services.vestaforge.profile;
                 matrixProvider = profileConfig.services.vestaforge.matrix.provider;
-                matrixBackend = profileConfig.den.quirks.meshServices.matrix.backend;
+                matrixBackend = profileConfig.den.quirks.meshServices.matrix.backend or "disabled";
                 releaseGated = profileReleaseGated;
                 primaryAcceptanceTarget = profilePrimaryAcceptance;
                 apiBindHost = profileConfig.services.vestaforge.api.bindHost;
@@ -232,11 +270,11 @@ in
                 case "$profile" in
                   mini-pc)
                     test "$matrixProvider" = "tuwunel"
-                    test "$matrixBackend" = "tuwunel"
+                    test "$matrixBackend" = "disabled"
                     ;;
                   sbc-rpi4)
                     test "$matrixProvider" = "conduit"
-                    test "$matrixBackend" = "conduit"
+                    test "$matrixBackend" = "disabled"
                     ;;
                   *)
                     echo "unexpected VestaForge alpha profile: $profile" >&2
@@ -318,7 +356,7 @@ in
             pkgs.runCommand "vestaforge-cli-check"
               {
                 nativeBuildInputs = [
-                  pkgs.python3
+                  (pkgs.python3.withPackages (ps: [ ps.aiohttp ]))
                   pkgs.vestaforge-control
                 ];
               }
@@ -358,67 +396,37 @@ in
                 controlUser = profileConfig.systemd.services.vestaforge-control.serviceConfig.User;
                 controlReadWritePath = builtins.elemAt profileConfig.systemd.services.vestaforge-control.serviceConfig.ReadWritePaths 0;
                 matrixService =
-                  if profileConfig.services.vestaforge.matrix.provider == "conduit" then
+                  if !profileConfig.services.vestaforge.matrix.enable then
+                    "disabled"
+                  else if profileConfig.services.vestaforge.matrix.provider == "conduit" then
                     profileConfig.systemd.services.vestaforge-matrix-conduit.serviceConfig.User
                   else
                     profileConfig.systemd.services.vestaforge-matrix-tuwunel.serviceConfig.User;
                 matrixReleaseGated =
                   if profileConfig.den.quirks.meshServices.control.matrixReleaseGated then "1" else "0";
                 openzitiMfa =
-                  if profileConfig.den.quirks.meshServices.openziti.privilegedMfaRequired then "1" else "0";
+                  if (profileConfig.den.quirks.meshServices.openziti.privilegedMfaRequired or false) then
+                    "1"
+                  else
+                    "0";
                 publicationPublicOnly =
-                  if profileConfig.den.quirks.meshServices.geopack.publication.publicOnly then "1" else "0";
+                  if (profileConfig.den.quirks.meshServices.geopack.publication.publicOnly or false) then
+                    "1"
+                  else
+                    "0";
               }
               ''
                 test "$controlUser" = "vestaforge"
-                test "$matrixService" = "vestaforge"
+                test "$matrixService" = "disabled"
                 test "$matrixReleaseGated" = "1"
                 test "$controlReadWritePath" = "/var/lib/vestaforge"
-                test "$openzitiMfa" = "1"
-                test "$publicationPublicOnly" = "1"
+                test "$openzitiMfa" = "0"
+                test "$publicationPublicOnly" = "0"
                 touch "$out"
               '';
         };
         x86Checks = lib.optionalAttrs (system == "x86_64-linux") {
-          vm-smoke = pkgs.nixosTest {
-            name = "vestaforge-mini-pc-smoke";
-
-            nodes.machine =
-              { pkgs, ... }:
-              {
-                imports = [ self.nixosModules.vestaforge ];
-                nixpkgs.overlays = [ self.overlays.default ];
-
-                environment.systemPackages = [ pkgs.curl ];
-
-                services.vestaforge = {
-                  enable = true;
-                  profile = "mini-pc";
-                  domain = "vestaforge.local";
-                  matrix.provider = "tuwunel";
-                  nostr.relays = [ "mock://vm" ];
-                  openziti.enable = true;
-                  geopack.enable = true;
-                  radio.simulator.enable = true;
-                };
-
-                system.stateVersion = "25.05";
-              };
-
-            testScript = ''
-              machine.start()
-              machine.wait_for_unit("vestaforge-matrix-tuwunel.service")
-              machine.wait_for_unit("vestaforge-openziti-controller.service")
-              machine.wait_for_unit("vestaforge-openziti-edge-router.service")
-              machine.wait_for_unit("vestaforge-control.service")
-              machine.succeed("curl --fail --silent http://127.0.0.1:8787/health")
-              machine.succeed("vfctl --state-dir /var/lib/vestaforge waypoint add-simulated --id vm-wp --lat 44.0521 --lon -123.0868 --label VM --visibility public")
-              machine.succeed("vfctl --state-dir /var/lib/vestaforge geopack create --id vm-pack --name VM --waypoint vm-wp --visibility public")
-              machine.succeed("vfctl --state-dir /var/lib/vestaforge geopack publish --pack vm-pack")
-            '';
-          };
-
-          vm = self.nixosConfigurations.vestaforge-mini-pc.config.system.build.vm;
+          vm-smoke = import ../tests/appliance.nix { inherit pkgs self; };
         };
       in
       commonChecks // x86Checks
@@ -446,7 +454,7 @@ in
             pkgs.runCommand "vestaforge-cli-check"
               {
                 nativeBuildInputs = [
-                  pkgs.python3
+                  (pkgs.python3.withPackages (ps: [ ps.aiohttp ]))
                   pkgs.vestaforge-control
                 ];
               }

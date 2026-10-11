@@ -1,0 +1,55 @@
+name: Draft release
+on:
+  push:
+    tags: ['v*']
+permissions:
+  contents: read
+jobs:
+  images:
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - runner: ubuntu-24.04
+            system: x86_64-linux
+            targets: vestaforge-mini-pc-image vestaforge-mini-pc-installer
+          - runner: ubuntu-24.04-arm
+            system: aarch64-linux
+            targets: vestaforge-rpi4-image
+    runs-on: ${{ matrix.runner }}
+    timeout-minutes: 240
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+      - uses: cachix/install-nix-action@56a7bb7b56d9a92d4fd1bc05758de7eea4a370a8
+      - uses: nix-community/cache-nix-action@d8cff2f74b9341e0d90fbf3c0c0212a161ceaef6
+        with:
+          primary-key: nix-${{ runner.os }}-${{ runner.arch }}-${{ hashFiles('flake.lock') }}
+          restore-prefixes-first-match: nix-${{ runner.os }}-${{ runner.arch }}-
+      - run: nix flake check --all-systems --no-build --accept-flake-config
+      - run: nix flake check --accept-flake-config
+      - name: Build committed inputs and archive complete closures
+        env:
+          SYSTEM: ${{ matrix.system }}
+          TARGETS: ${{ matrix.targets }}
+        run: nix develop --accept-flake-config --command bash .github/scripts/build-images.sh
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: images-${{ matrix.system }}
+          path: artifacts/
+          retention-days: 14
+  draft:
+    needs: images
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+      - uses: cachix/install-nix-action@56a7bb7b56d9a92d4fd1bc05758de7eea4a370a8
+      - uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093
+        with:
+          path: artifacts
+      - name: Create draft pending physical acceptance
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: nix develop --accept-flake-config --command bash .github/scripts/draft-release.sh

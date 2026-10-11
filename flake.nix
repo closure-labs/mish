@@ -2,7 +2,7 @@
   description = "VestaForge 0.1 alpha NixOS appliance";
 
   inputs = {
-    nixpkgs.url = "github:NixOS/nixpkgs/nixos-25.05";
+    nixpkgs.url = "github:NixOS/nixpkgs/nixos-26.05";
     nixos-raspberrypi.url = "github:nvmd/nixos-raspberrypi/main";
   };
 

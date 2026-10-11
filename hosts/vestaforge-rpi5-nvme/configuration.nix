@@ -64,10 +64,11 @@
     nixDistribution = "nixos";
     matrix.provider = "conduit";
     nostr.relays = [ "mock://local" ];
-    openziti.enable = true;
-    geopack.enable = true;
-    radio.simulator.enable = true;
+    openziti.enable = false;
+    geopack.enable = false;
+    radio.simulator.enable = false;
+    localAccess.enable = true;
   };
 
-  system.stateVersion = "25.05";
+  system.stateVersion = "26.05";
 }

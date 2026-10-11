@@ -1,126 +1,65 @@
-# Building the Alpha
+# Building and evidence levels
 
-VestaForge 0.1 has two release-gated appliance targets:
-
-- `x86_64-linux` Mini-PC: `packages.x86_64-linux.vestaforge-mini-pc-image`
-- `aarch64-linux` Raspberry Pi 4-class SBC: `packages.aarch64-linux.vestaforge-rpi4-image`
-
-The `vestaforge-rpi5-nvme` host is experimental and is not part of the alpha
-acceptance gate. See `docs/pi5-experimental.md`.
-
-On an `aarch64-darwin` development host, there are three useful verification
-levels.
-
-## Local Readiness
-
-Run:
+Build the event coordinator from the committed `flake.lock`. The supported
+first-wave targets are x86_64 and Pi 4 (4 GB RAM); Pi 5 is experimental and
+is outside their physical acceptance gate.
 
 ```bash
-scripts/alpha-build-status.sh
+nix flake check --no-build --all-systems
+nix flake check
+nix build .#packages.x86_64-linux.vestaforge-control
+nix build .#packages.x86_64-linux.vestaforge-mini-pc-image
+nix build .#packages.x86_64-linux.vestaforge-mini-pc-installer
+nix build .#packages.aarch64-linux.vestaforge-rpi4-image
 ```
 
-This performs:
+The mini-PC image output is a QEMU VM. The separate mini-PC installer output
+is a bootable ISO with installation/rescue tools; it does not automatically
+partition or erase a disk. The Pi 4 output is an SD image. See
+[commissioning.md](commissioning.md) for physical setup and
+[acceptance.md](acceptance.md) for qualification.
 
-- all-system flake evaluation with `nix flake check --no-build --all-systems`
-- explicit profile assertions for Mini-PC and RPi4
-- host-native Darwin package, schema, and CLI checks
-- Reticulum/RNode provider module evaluation with a fake `rnsd` package
-- Linux image dry-runs for both release-gated targets
+| Evidence | Establishes | Does not establish |
+|---|---|---|
+| All-system evaluation | Expressions and option assertions evaluate | Packages/images build |
+| Native package/check builds | Artifacts realize on that architecture | Images boot or radios work |
+| x86 VM integration | Services boot and actual application operations pass in QEMU | Physical installation/USB/RF readiness |
+| Image builds | VM/ISO/SD artifacts exist from pinned sources | Hardware-specific boot and recovery |
+| Physical acceptance | Recorded procedures pass on named hardware | Other boards, venues or RF conditions |
 
-This is the strongest check that does not require Linux builders.
+## Linux builders from macOS
 
-## Full Alpha Build
+The helper `scripts/alpha-build-status.sh` runs Darwin-native checks and Linux
+image dry-runs; `--full` also attempts Linux artifact builds. Its report should
+be interpreted according to the evidence levels above.
 
-Run:
+A macOS host requires a Linux-capable builder for each architecture. A native
+ARM Linux builder realizes `aarch64-linux`; an x86 Linux builder realizes
+`x86_64-linux`. CI uses native Linux runners for both.
 
-```bash
-scripts/alpha-build-status.sh --full
-```
+If using Determinate Nix's native Linux builder, inspect
+`determinate-nixd status`, `determinate-nixd version` and
+`nix config show external-builders`. Access to that development builder may
+require a hosted login; deployed event operation does not.
 
-This requires a Linux-capable builder path for both Linux systems:
-
-- `x86_64-linux`
-- `aarch64-linux`
-
-The builder path can be either:
-
-- Determinate Nix's native Linux builder for macOS, exposed through Nix
-  `external-builders`
-- classic Nix distributed builders in `/etc/nix/machines`
-
-If no Linux-capable builder is available, Nix exits with `required system or
-feature not available`.
-
-## Determinate Native Builder
-
-On macOS with Determinate Nix, prefer Determinate's native Linux builder. The
-expected host signals are:
-
-```bash
-determinate-nixd status
-determinate-nixd version
-nix config show external-builders
-```
-
-The Determinate nix-darwin module should render:
-
-```json
-{
-  "builder": {
-    "state": "enabled"
-  }
-}
-```
-
-at `/etc/determinate/config.json`.
-
-The native builder is access-gated by Determinate/FlakeHub. If Linux builds fail
-while `/etc/determinate/config.json` has the builder enabled, check that:
-
-- `determinate-nixd status` shows a logged-in FlakeHub user
-- `determinate-nixd version` lists the native builder among enabled features
-- Determinate Nix is current enough for the native builder
-- the daemon has been restarted after any update
-
-Determinate's troubleshooting flow is:
-
-```bash
-determinate-nixd auth logout
-determinate-nixd auth login
-sudo launchctl kickstart -k system/systems.determinate.nix-daemon
-```
-
-## Nixpkgs VM Builder Fallback
-
-Nixpkgs also provides a macOS Linux builder VM:
+Nixpkgs' macOS VM builder can provide ARM Linux builds:
 
 ```bash
 nix build nixpkgs#darwin.linux-builder --no-link --print-out-paths
 ```
 
-The helper's main program is `create-builder`. Running it creates SSH key
-material, may install `/etc/nix/builder_ed25519*` through `sudo`, creates a
-`nixos.qcow2` disk image, and starts an `aarch64-linux` NixOS VM with SSH
-forwarded on host port `31022`.
+Its `create-builder` program creates a VM and SSH material and may install
+keys under `/etc/nix` through sudo. Keep it running and configure a builder
+entry appropriate to its advertised architecture. It cannot satisfy an x86
+build unless it explicitly supports x86 execution. Inspect
+`nix config show builders` before attempting full builds. Avoid interpreting
+`required system or feature not available` as an application failure: it means
+no suitable builder was available.
 
-Keep the VM running in a separate terminal. Then configure Nix with a builder
-entry for `aarch64-linux`, for example in `/etc/nix/machines`:
+## Artifact records
 
-```text
-ssh-ng://builder@localhost:31022 aarch64-linux - 4 1 benchmark,big-parallel -
-```
-
-That handles the Raspberry Pi image target. It does not satisfy the Mini-PC
-target unless the builder also advertises and can execute `x86_64-linux`.
-For `--full` to pass without Determinate's native builder, also provide a
-builder that advertises `x86_64-linux`, such as a local or remote x86_64 Linux
-Nix builder, or replace the Mini-PC build strategy with a deliberate cross-build
-design.
-
-After updating builder configuration, restart or reload the Nix daemon as
-appropriate for the host, confirm either `nix config show external-builders`
-or `nix config show builders` exposes a Linux-capable path, and rerun:
-
-```bash
-scripts/alpha-build-status.sh --full
-```
+Image CI uploads SHA-256 checksums, source revision and a build manifest. Verify
+those checksums before flashing. A draft tagged release must rebuild from its
+tag and include commissioning instructions. Record any skipped or blocked
+build/VM check explicitly; do not describe evaluation-only verification as a
+successful image build.

@@ -3,8 +3,16 @@
   makeWrapper,
   python3,
   stdenvNoCC,
+  withMeshtastic ? true,
 }:
 
+let
+  python = python3.withPackages (
+    ps:
+    [ ps.aiohttp ]
+    ++ lib.optionals (withMeshtastic && stdenvNoCC.hostPlatform.isLinux) [ ps.meshtastic ]
+  );
+in
 stdenvNoCC.mkDerivation {
   pname = "vestaforge-control";
   version = "0.1.0-alpha";
@@ -19,17 +27,17 @@ stdenvNoCC.mkDerivation {
     mkdir -p "$out/lib/vestaforge" "$out/bin"
     cp -R src "$out/lib/vestaforge/"
 
-    makeWrapper ${python3}/bin/python3 "$out/bin/vfctl" \
+    makeWrapper ${python}/bin/python3 "$out/bin/vfctl" \
       --set PYTHONPATH "$out/lib/vestaforge/src" \
       --add-flags "-m" \
       --add-flags "vestaforge.cli"
 
-    makeWrapper ${python3}/bin/python3 "$out/bin/vf-matrix-stub" \
+    makeWrapper ${python}/bin/python3 "$out/bin/vf-matrix-stub" \
       --set PYTHONPATH "$out/lib/vestaforge/src" \
       --add-flags "-m" \
       --add-flags "vestaforge.matrix_stub"
 
-    makeWrapper ${python3}/bin/python3 "$out/bin/vf-openziti-stub" \
+    makeWrapper ${python}/bin/python3 "$out/bin/vf-openziti-stub" \
       --set PYTHONPATH "$out/lib/vestaforge/src" \
       --add-flags "-m" \
       --add-flags "vestaforge.openziti_stub"

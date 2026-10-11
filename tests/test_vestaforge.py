@@ -148,8 +148,8 @@ class StoreTests(unittest.TestCase):
     def test_default_config_reports_radio_providers(self) -> None:
         config = default_config("/tmp/vestaforge-test")
         self.assertEqual(config["nixDistribution"], "nixos")
-        self.assertEqual(config["radio"]["providers"], ["meshtastic-simulated"])
-        self.assertTrue(config["radio"]["simulator"]["enable"])
+        self.assertEqual(config["radio"]["providers"], [])
+        self.assertFalse(config["radio"]["simulator"]["enable"])
         self.assertFalse(config["radio"]["reticulumRnode"]["enable"])
 
 

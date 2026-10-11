@@ -21,6 +21,34 @@ def build_parser() -> argparse.ArgumentParser:
     parser.add_argument("--state-dir", help="Override VestaForge state directory")
     sub = parser.add_subparsers(dest="command", required=True)
 
+    commission = sub.add_parser("commission", help="Create first local operator; print token once")
+    commission.add_argument("--name", required=True)
+    enroll = sub.add_parser("enroll", help="Enroll staff using privileged local appliance access")
+    enroll.add_argument("--name", required=True)
+    enroll.add_argument("--role", choices=["staff", "operator"], default="staff")
+    revoke = sub.add_parser("revoke", help="Revoke an enrolled token using local owner access")
+    revoke.add_argument("--id", required=True)
+    message = sub.add_parser("message", help="Write a message locally")
+    message.add_argument("--text", required=True)
+    message.add_argument("--author", required=True)
+    alert = sub.add_parser("alert", help="Create a local operational alert")
+    alert.add_argument("--text", required=True)
+    alert.add_argument("--author", required=True)
+    alert.add_argument("--responder", required=True)
+    alert.add_argument("--expires", type=float, required=True)
+    alert.add_argument("--urgent", action="store_true")
+    ack = sub.add_parser("ack", help="Record an acknowledgement using enrolled bearer token")
+    ack.add_argument("--id", required=True)
+    ack.add_argument("--token", required=True)
+    publish = sub.add_parser("announce", help="Explicitly publish official announcement locally")
+    publish.add_argument("--text", required=True)
+    backup = sub.add_parser("backup", help="Create consistent SQLite backup including credentials")
+    backup.add_argument("--output", required=True)
+    sub.add_parser("messages", help="List private local journal")
+    sub.add_parser("prune", help="Apply configured event retention")
+    wipe = sub.add_parser("wipe", help="Explicit end-of-event deletion; stop service first")
+    wipe.add_argument("--confirm", choices=["WIPE-EVENT"], required=True)
+
     sub.add_parser("status", help="Show profile, provider, and service health")
 
     serve_parser = sub.add_parser("serve", help="Run the local VestaForge HTTP API")
@@ -161,6 +189,50 @@ def main(argv: list[str] | None = None) -> int:
     parser = build_parser()
     args = parser.parse_args(argv)
     try:
+        if args.command in {"commission", "enroll", "revoke", "message", "alert", "ack", "announce", "backup", "messages", "prune", "wipe"}:
+            from .appliance import EventStore
+            config = load_config(args.config, args.state_dir)
+            if args.command == "wipe" and not (Path(config["stateDir"]) / "events.sqlite").is_file():
+                raise ValueError("refusing to wipe an uncommissioned state directory")
+            events = EventStore(config["stateDir"], config.get("queueLimit", 1000), recover=False)
+            if args.command == "commission":
+                print_json(events.enroll(args.name, "operator", first=True))
+            elif args.command == "enroll":
+                print_json(events.enroll(args.name, args.role))
+            elif args.command == "revoke":
+                events.revoke(args.id)
+                print_json({"revoked": args.id})
+            elif args.command == "message":
+                print_json(events.create(args.text, args.author))
+            elif args.command == "alert":
+                print_json(events.create(args.text, args.author, "urgent" if args.urgent else "alert", args.responder, args.expires))
+            elif args.command == "ack":
+                actor = events.authenticate(args.token)
+                if not actor:
+                    raise ValueError("invalid staff token")
+                print_json(events.ack(args.id, actor["id"]))
+            elif args.command == "announce":
+                print_json(events.publish(args.text))
+            elif args.command == "backup":
+                events.backup(args.output)
+                print_json({"backup": args.output})
+            elif args.command == "messages":
+                print_json({"messages": events.records()})
+            elif args.command == "prune":
+                events.prune(config.get("retentionDays", 7))
+            elif args.command == "wipe":
+                import shutil
+                # State path comes from privileged CLI config, never a network request.
+                state = Path(config["stateDir"]).resolve()
+                if str(state) in ("/", "/var", "/var/lib", "/home", "/tmp"):
+                    raise ValueError("refusing unsafe state directory")
+                for child in state.iterdir():
+                    if child.is_dir() and not child.is_symlink():
+                        shutil.rmtree(child)
+                    else:
+                        child.unlink()
+                print_json({"wiped": str(state)})
+            return 0
         if args.command == "status":
             return command_status(args)
         if args.command == "serve":

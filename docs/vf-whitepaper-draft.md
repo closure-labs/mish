@@ -1,3 +1,7 @@
+> Historical design archive. This paper describes proposed integrations, not
+> delivered capabilities. The current event-appliance scope and evidence gates
+> are in [roadmap.md](roadmap.md). Matrix and OpenZiti remain health stubs.
+
 # VestaForge
 
 ## Executive Summary

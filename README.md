@@ -1,149 +1,99 @@
-# VestaForge
+# Mish / VestaForge
 
-VestaForge 0.1 alpha is a NixOS appliance prototype for Mini-PC and
-Raspberry Pi 4-class SBC targets.
-It demonstrates profile-driven NixOS composition, Den-compatible quirk data,
-Matrix provider selection, OpenZiti-protected local service surfaces, simulated
-Meshtastic-like waypoint ingest, experimental Reticulum/RNode radio provider
-wiring, signed GeoPack manifests, and mock/file Nostr publication.
+Mish is an offline, owner-operated event coordination appliance. VestaForge is
+its existing repository, NixOS module and CLI name. One coordinator serves a
+private staff web app, journals messages and alerts in SQLite, and connects to a
+USB Meshtastic radio. Attendees see a read-only feed of explicitly published
+announcements. An external Wi-Fi access point connects to the coordinator by
+Ethernet; event operation requires no cloud account or WAN.
 
-The 0.1 release-gated targets are `x86_64-linux` with the `mini-pc` profile and
-`aarch64-linux` with the `sbc-rpi4` profile. `home-server` is represented in the
-catalog and option model, but is not release-gated by this alpha. Raspberry Pi 5
-NVMe support is represented as the experimental `sbc-rpi5-nvme` profile and is
-not an alpha acceptance target.
+The initial target is x86_64, followed by Raspberry Pi 4 with 4 GB RAM. The Pi 5
+and home-server profiles remain experimental. This is an implementation
+prototype: image realization, physical installation, radio interoperability and
+an eight-hour event rehearsal require separate acceptance evidence.
 
-## Flake Outputs
+## Start here
 
-- `nixosConfigurations.vestaforge-mini-pc`
-- `nixosConfigurations.vestaforge-rpi4`
-- `nixosConfigurations.vestaforge-rpi5-nvme`
-- `packages.x86_64-linux.{vestaforge-control,vestaforge-image,vestaforge-mini-pc-image}`
-- `packages.aarch64-linux.{vestaforge-control,vestaforge-image,vestaforge-rpi4-image,vestaforge-rpi5-installer-image,vestaforge-rpi5-nvme-system}`
-- `packages.aarch64-darwin.vestaforge-control`
-- `checks.x86_64-linux.{module-eval,matrix-dual-provider-policy,reticulum-rnode-provider,schema,cli,service-config,vm-smoke,vm}`
-- `checks.aarch64-linux.{module-eval,matrix-dual-provider-policy,reticulum-rnode-provider,schema,cli,service-config}`
-- `checks.aarch64-darwin.{schema,cli}`
-- `devShells.x86_64-linux.default`
-- `devShells.aarch64-linux.default`
-- `devShells.aarch64-darwin.default`
+- [Commissioning and recovery](docs/commissioning.md): installation, local TLS,
+  staff/radio enrollment, backup, restore and end-of-event wipe.
+- [Live event operator runbook](docs/operator-runbook.md): outages, uncertain
+  sends, unacknowledged alerts and recovery.
+- [Architecture and milestone gates](docs/roadmap.md): capability inventory,
+  dependencies, acknowledgement semantics and deferred work.
+- [Verification evidence](docs/verification.md): automated results and open
+  image/hardware gates.
+- [Physical acceptance record](docs/acceptance.md): reproducible field checklist
+  and measured results; unperformed checks remain open.
+- [Contributing](docs/contributing.md): local checks, jj bookmarks and PRs.
+- [Building](docs/building-alpha.md): native Linux outputs and macOS builders.
 
-## Flake Structure Plan
-
-The flake follows the nearby Den repository's dendritic direction: keep
-`flake.nix` as a thin entrypoint and move output construction into the `nix/`
-tree.
-
-Current state:
-
-- `flake.nix` delegates to `nix/default.nix`
-- `nix/default.nix` owns packages, apps, checks, dev shells, overlays, and NixOS
-  configurations
-
-Next structural steps:
-
-1. Split `nix/default.nix` into focused files such as `nix/packages.nix`,
-   `nix/apps.nix`, `nix/checks.nix`, `nix/dev-shells.nix`, and
-   `nix/nixos-configurations.nix`.
-2. Keep those files plain Nix while the output graph is still small enough to
-   understand directly.
-3. Adopt `flake-parts` once per-system outputs, checks, and host definitions
-   become independently owned modules and the merge semantics are worth the
-   additional input.
-4. If VestaForge adopts Den more deeply, prefer Den's `flakeModule` and
-   `import-tree` style so `flake-parts` becomes the composition host instead of
-   a standalone abstraction layer.
-
-## Local CLI
+## Build and verify
 
 ```bash
-nix run .# -- status
-nix run .# -- waypoint add-simulated --lat 44.0521 --lon -123.0868 --label "Checkpoint" --visibility public
-nix run .# -- waypoint list
-nix run .# -- geopack create --name "Field Pack" --waypoint <waypoint-id> --visibility public
-nix run .# -- geopack publish --pack <pack-id>
-nix run .# -- identity bootstrap-operator
-```
-
-By default, mutable state is under `/var/lib/vestaforge`. For local development,
-set `VESTAFORGE_STATE_DIR` or pass `--state-dir`.
-
-## NixOS Options
-
-The appliance module exposes:
-
-- `services.vestaforge.enable`
-- `services.vestaforge.profile = "mini-pc" | "sbc-rpi4" | "sbc-rpi5-nvme" | "home-server"`
-- `services.vestaforge.domain`
-- `services.vestaforge.nixDistribution = "nixos" | "determinate"`
-- `services.vestaforge.matrix.provider = "tuwunel" | "conduit"`
-- `services.vestaforge.openziti.enable`
-- `services.vestaforge.geopack.enable`
-- `services.vestaforge.nostr.relays`
-- `services.vestaforge.radio.providers = [ "meshtastic-simulated" ] | [ "reticulum-rnode" ]`
-- `services.vestaforge.radio.simulator.enable`
-- `services.vestaforge.radio.reticulumRnode.enable`
-- `services.vestaforge.radio.reticulumRnode.package`
-- `services.vestaforge.radio.reticulumRnode.port`
-
-Matrix providers are mutually exclusive for one domain. Enabling both Conduit
-and Tuwunel produces a NixOS assertion failure.
-
-`reticulum-rnode` is implemented as an experimental provider. It renders a
-Reticulum `RNodeInterface` configuration and starts `rnsd`, but nixpkgs marks
-the RNS package as unfree in the current pin. Deployments that select this
-provider must explicitly allow the package and set
-`services.vestaforge.radio.reticulumRnode.package = pkgs.rns`.
-
-## HTTP API
-
-The control API binds to `127.0.0.1` and is intended to be exposed remotely only
-through the OpenZiti service model:
-
-- `GET /health`
-- `GET /waypoints`
-- `POST /waypoints/simulated`
-- `POST /geopacks`
-- `POST /geopacks/{id}/publish`
-
-## Verification
-
-```bash
-nix flake check
-```
-
-From non-Linux development hosts, include every declared Linux target explicitly:
-
-```bash
+nix develop
 nix flake check --no-build --all-systems
-```
-
-Build entrypoints:
-
-```bash
+nix flake check
 nix build .#packages.x86_64-linux.vestaforge-mini-pc-image
 nix build .#packages.aarch64-linux.vestaforge-rpi4-image
 ```
 
-On an AArch64 Darwin development host, use the build status helper to run the
-host-native checks and Linux image dry-runs:
+The mini-PC image name remains compatible with earlier CLI/module names and
+builds a QEMU VM. Physical installation uses the separate installer output
+described in the commissioning guide. Evaluation checks expression validity;
+builds realize artifacts; VM tests exercise a running application. None proves
+physical hardware readiness. Build ARM outputs on a native ARM builder.
 
-```bash
-scripts/alpha-build-status.sh
-```
+The supported-target configuration uses NixOS 26.05 and `system.stateVersion =
+"26.05"`: the project has never been deployed, so there is no installed-state
+compatibility to preserve. Inputs are committed in `flake.lock`.
 
-After configuring a Linux builder, require the actual Mini-PC and RPi4 Linux
-builds:
+## Application boundaries
 
-```bash
-scripts/alpha-build-status.sh --full
-```
+The HTTP application binds to loopback by default and sits behind Caddy local
+HTTPS on the appliance. Operator and staff bearer credentials are generated at
+commissioning or first boot and kept in runtime state, never in shared images.
+The local CLI runs as the appliance's trusted operator/service user; filesystem
+access to that state is administrative access.
 
-If Nix reports `builders = @/etc/nix/machines` but `/etc/nix/machines` is
-missing, no Linux builder is currently available to realize those Linux outputs
-from Darwin.
+Messages, alerts and acknowledgement history are private. Publication is an
+explicit operator action that creates a separate announcement projection.
+Incoming radio messages never publish themselves. Broadcast transport
+confirmation does not prove a human received or read an alert; staff must
+acknowledge it explicitly.
 
-See `docs/building-alpha.md` for local readiness levels and Darwin Linux builder
-notes.
-See `docs/pi5-experimental.md` for the non-release-gated Raspberry Pi 5 NVMe
-test path and Determinate Nix switch-over notes.
+The existing waypoint/GeoPack CLI is retained for compatibility. Matrix and
+OpenZiti services are health stubs, not implemented messaging or access
+protection. Reticulum starts a daemon but has no application bridge. Nostr
+mock/file publication and waypoint simulation are development facilities;
+these integrations are deferred and simulations are opt-in. The
+[historical whitepaper](docs/vf-whitepaper-draft.md) is retained as a design
+archive and does not describe current delivered capabilities.
+
+## HTTP surface
+
+Send `Authorization: Bearer <token>` for staff/operator operations. The bundled
+staff app uses the same routes. Requests are bounded to 16 KiB; text on the
+initial radio path is limited to 160 UTF-8 bytes.
+
+| Route | Access | Behavior |
+|---|---|---|
+| `GET /health` | Public | Minimal coordinator health |
+| `GET /staff` | Public app shell | Data requires an enrolled token |
+| `GET /public` and `/public/announcements` | Public | Published announcements only |
+| `GET /api/status` | Staff | Selected adapter and current radio connection state |
+| `GET /api/messages` | Staff | Private journal, enrolled author names and acknowledgement state |
+| `POST /api/messages` | Staff | Durably accept text into the outbox |
+| `POST /api/alerts` | Staff | Accept alert with responder and expiry |
+| `POST /api/alerts/{id}/ack` | Staff | Explicit authenticated acknowledgement |
+| `POST /api/staff` | Operator | Generate staff/operator enrollment token |
+| `POST /api/announcements` | Operator | Explicitly publish announcement text |
+| `DELETE /api/staff/{id}` | Operator | Revoke a credential, preserving the last operator |
+
+The original waypoint/GeoPack HTTP operations require operator authorization;
+network GeoPack publication remains a local CLI operation during the PoC.
+
+The journal preserves delivery timestamps separately from its current queue,
+submission, transport-confirmation and uncertainty state. Human ACKs remain
+separate records. Real-radio sends are paced by
+`services.vestaforge.radio.meshtastic.sendIntervalSeconds` (30 seconds by
+default). This is engineering pacing, not an RF delivery-time promise.

@@ -16,6 +16,8 @@ let
     domain = cfg.domain;
     nixDistribution = cfg.nixDistribution;
     stateDir = cfg.stateDir;
+    coordinatorId = cfg.coordinatorId;
+    retentionDays = cfg.retentionDays;
     api = {
       bindHost = cfg.api.bindHost;
       port = cfg.api.port;
@@ -50,7 +52,21 @@ let
       relays = cfg.nostr.relays;
     };
     radio = {
+      adapter =
+        if cfg.radio.meshtastic.enable then
+          "meshtastic"
+        else if cfg.radio.simulator.enable then
+          "simulator"
+        else
+          "disabled";
       providers = cfg.radio.providers;
+      meshtastic = {
+        enable = cfg.radio.meshtastic.enable;
+        device = cfg.radio.meshtastic.device;
+        channel = cfg.radio.meshtastic.channel;
+        sendIntervalSeconds =
+          if cfg.radio.meshtastic.enable then cfg.radio.meshtastic.sendIntervalSeconds else 0;
+      };
       simulator = {
         enable = cfg.radio.simulator.enable;
       };
@@ -84,12 +100,24 @@ in
     environment.etc."vestaforge/config.json".source = renderedConfig;
     environment.etc."vestaforge/catalog.json".source = ../../../catalog/vestaforge-catalog.json;
 
+    services.caddy = lib.mkIf cfg.localAccess.enable {
+      enable = true;
+      virtualHosts.${cfg.localAccess.hostName}.extraConfig = ''
+        tls internal
+        reverse_proxy 127.0.0.1:${toString cfg.api.port}
+      '';
+    };
+    networking.firewall.allowedTCPPorts = lib.optionals cfg.localAccess.enable [
+      80
+      443
+    ];
+    users.users.vestaforge.extraGroups = lib.optionals cfg.radio.meshtastic.enable [ "dialout" ];
     systemd.services.vestaforge-control = {
       description = "VestaForge local control API";
       wantedBy = [ "multi-user.target" ];
       after = [
         "network.target"
-        "vestaforge-matrix-${cfg.matrix.provider}.service"
+
       ]
       ++ lib.optionals cfg.openziti.enable [
         "vestaforge-openziti-controller.service"

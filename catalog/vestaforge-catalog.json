@@ -1,5 +1,11 @@
 {
   "capabilities": {
+    "eventCoordinator": {
+      "provider": "aiohttp-sqlite",
+      "staffAuthentication": "enrolled-bearer-token",
+      "publicFeed": "explicit-announcements-only",
+      "physicalQualification": "pending"
+    },
     "geopack": {
       "providers": ["local-json"],
       "schema": "schemas/geopack-manifest.schema.json"
@@ -13,8 +19,8 @@
       "quirk": "den.quirks.meshServices.openziti"
     },
     "radio": {
-      "providers": ["meshtastic-simulated", "reticulum-rnode"],
-      "releaseGatedProviders": ["meshtastic-simulated"],
+      "providers": ["meshtastic-usb", "meshtastic-simulated", "reticulum-rnode"],
+      "releaseGatedProviders": ["meshtastic-usb", "meshtastic-simulated"],
       "experimentalProviders": ["reticulum-rnode"],
       "hardwareProvidersEnabled": true
     }
