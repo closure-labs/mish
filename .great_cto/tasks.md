@@ -127,6 +127,11 @@ Physical hardware and field-pilot acceptance remain open.
   remain open. Great CTO infrastructure specialist reviewed the gate design.
 - [x] Implementation: machine-readable dependency policy, actual-workflow
   validation, fail-closed prerequisite guards and qualification evidence.
-- [x] Independent code/security review approved; 19 lightweight helper tests
+- [x] Independent code/security review approved; 20 lightweight helper tests
   pass under the bounded nix develop shell, including gate and artifact failures.
+  Qualification tests also pass against read-only source fixtures. Metadata and
+  maintenance-update jobs do not claim native validation snapshot keys.
+- [x] Active merge rules and queue admission require Software qualification
+  alongside both unchanged native contexts. Prior run 38182728905 passed both
+  native jobs and aggregate qualification; final snapshot changes repeat CI.
 - [ ] Native GitHub checks and merge-group delivery.
