@@ -44,7 +44,8 @@ End-to-end automatic admission was exercised by
 queue enrollment. [Merge queue run 38174507668](https://github.com/closure-labs/mish/actions/runs/38174507668)
 admitted its validated head and explicitly dispatched
 [queue Checks run 38174603025](https://github.com/closure-labs/mish/actions/runs/38174603025)
-for the combined commit.
+for the combined commit. PR #9 subsequently merged as `503ed429`; the
+rebrand retains that automatic-admission evidence when updating its main base.
 
 Physical M2–M5 gates remain open. This task does not publish or deploy a release.
 
