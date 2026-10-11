@@ -1,8 +1,11 @@
 //! Mish: one authoritative offline event coordinator.
 
 pub mod appliance;
+pub mod channel_store;
+pub mod channels;
 pub mod coordinator;
 pub mod domain;
+pub mod provision;
 pub mod radio;
 pub mod recovery;
 pub mod server;

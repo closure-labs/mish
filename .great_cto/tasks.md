@@ -134,4 +134,23 @@ Physical hardware and field-pilot acceptance remain open.
 - [x] Active merge rules and queue admission require Software qualification
   alongside both unchanged native contexts. Prior run 38182728905 passed both
   native jobs and aggregate qualification; final snapshot changes repeat CI.
-- [ ] Native GitHub checks and merge-group delivery.
+- [x] Native GitHub checks and merge-group delivery: PR #17 merged as
+  `3061197`; final PR checks run 38183355942 passed both native contexts and
+  Software qualification.
+
+## Community, staff and department radio enrollment
+
+- [x] User scope: existing channel join or regional mesh creation, independent
+  256-bit keys, stock Meshtastic enrollment QR codes; public radio participation
+  replaces the read-only attendee model. Default browser role is enrollment.
+- [x] Architecture review: stable channel identities bind queued records;
+  SQLite stores credentials and membership; native USB commissioning verifies
+  readback, and reconnect never rewrites channels. Keys stay out of Nix/GitHub.
+- [x] Rust channel codec, generation, QR and protected native provisioning.
+- [x] Scoped registry, application/CLI enrollment and channel-aware outbox.
+- [x] Independent security review approved after private default-selection and
+  scoped journal fixes. Local behavioral checks: 68 Rust tests, seven Node 24
+  browser-selection tests, strict Clippy and formatting passed. Four native
+  USB fixtures exercise verified writes, wrong readback, disconnect and RF drift.
+- [ ] Independent security/QA and native GitHub qualification.
+- [ ] Merge queue delivery. Physical app/USB qualification remains open.

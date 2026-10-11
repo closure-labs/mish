@@ -4,13 +4,16 @@
 //! no upstream generated bindings, schemas, or GPL implementation are included.
 //! A completed serial write is submission, never proof of RF or human receipt.
 
+use crate::channel_store::channel_fingerprint;
 use crate::coordinator::Coordinator;
 use crate::domain::{MessageKind, TransmissionUpdate};
+use crate::provision::{DeviceChannel, decode_channel, decode_lora_config};
 use anyhow::{Context, Result, bail};
 use prost::Message;
 use serde_json::Value;
 use sha2::{Digest, Sha256};
 use std::{
+    collections::HashMap,
     future::Future,
     pin::Pin,
     sync::{Arc, Mutex},
@@ -65,6 +68,12 @@ struct EnvelopeIn {
     identity: Option<NodeIdentity>,
     #[prost(uint32, tag = "7")]
     configured: u32,
+    #[prost(bytes = "vec", optional, tag = "5")]
+    config: Option<Vec<u8>>,
+    #[prost(bool, tag = "8")]
+    rebooted: bool,
+    #[prost(bytes = "vec", optional, tag = "10")]
+    channel: Option<Vec<u8>>,
 }
 #[derive(Clone, PartialEq, Message)]
 struct NodeIdentity {
@@ -85,6 +94,8 @@ struct WirePacket {
     id: u32,
     #[prost(bool, tag = "10")]
     request_ack: bool,
+    #[prost(bool, tag = "17")]
+    pki_encrypted: bool,
 }
 #[derive(Clone, PartialEq, Message)]
 struct WireData {
@@ -181,6 +192,9 @@ type SendFuture<'a> = Pin<Box<dyn Future<Output = Result<String>> + Send + 'a>>;
 pub trait Transport: Send {
     fn send<'a>(&'a mut self, text: &'a str, channel: u32, record_id: &'a str) -> SendFuture<'a>;
     fn poll(&mut self) -> Result<Vec<RadioEvent>>;
+    fn fingerprint(&self, _channel: u32) -> Option<&str> {
+        None
+    }
 }
 
 #[derive(Default)]
@@ -237,7 +251,10 @@ fn event(packet: WirePacket, channel: u32, own_node: u32) -> Option<RadioEvent> 
             && routing.route_reply.is_none()
             && routing.error.unwrap_or(0) == 0
         {
-            return Some(RadioEvent::Confirmation(data.request.to_string()));
+            return Some(RadioEvent::Confirmation(format!(
+                "{channel}:{}",
+                data.request
+            )));
         }
         return None;
     }
@@ -246,6 +263,8 @@ fn event(packet: WirePacket, channel: u32, own_node: u32) -> Option<RadioEvent> 
         || packet.id == 0
         || packet.sender == 0
         || packet.sender == own_node
+        || packet.destination != u32::MAX
+        || packet.pki_encrypted
         || data.payload.len() > MAX_TEXT
     {
         return None;
@@ -268,6 +287,7 @@ struct SerialConnection<S: AsyncRead + AsyncWrite + Send + Unpin + 'static> {
     reader: JoinHandle<()>,
     own_node: u32,
     channel: u32,
+    bindings: HashMap<u32, String>,
 }
 impl<S: AsyncRead + AsyncWrite + Send + Unpin + 'static> Drop for SerialConnection<S> {
     fn drop(&mut self) {
@@ -275,7 +295,20 @@ impl<S: AsyncRead + AsyncWrite + Send + Unpin + 'static> Drop for SerialConnecti
     }
 }
 impl<S: AsyncRead + AsyncWrite + Send + Unpin + 'static> SerialConnection<S> {
+    #[cfg(test)]
     async fn connect(stream: S, channel: u32, store: &Coordinator) -> Result<Self> {
+        Self::connect_checked(stream, channel, store, false).await
+    }
+    async fn connect_checked(
+        stream: S,
+        channel: u32,
+        store: &Coordinator,
+        require_registry: bool,
+    ) -> Result<Self> {
+        let registered = store.radio_channels().await?;
+        if require_registry && registered.is_empty() {
+            bail!("native radio requires a commissioned channel registry");
+        }
         let (mut read, writer) = tokio::io::split(stream);
         let (tx, receiver) = mpsc::channel(INGRESS_CAPACITY);
         let reader = tokio::spawn(async move {
@@ -297,6 +330,7 @@ impl<S: AsyncRead + AsyncWrite + Send + Unpin + 'static> SerialConnection<S> {
             reader,
             own_node: 0,
             channel,
+            bindings: HashMap::new(),
         };
         let nonce = nonzero_id();
         connection
@@ -305,6 +339,8 @@ impl<S: AsyncRead + AsyncWrite + Send + Unpin + 'static> SerialConnection<S> {
                 ..Default::default()
             })
             .await?;
+        let mut channels: HashMap<u32, DeviceChannel> = HashMap::new();
+        let mut lora = None;
         tokio::time::timeout(Duration::from_secs(15), async {
             loop {
                 let message = connection
@@ -315,12 +351,38 @@ impl<S: AsyncRead + AsyncWrite + Send + Unpin + 'static> SerialConnection<S> {
                 if let Some(identity) = message.identity {
                     connection.own_node = identity.node;
                 }
-                if let Some(packet) = message.packet {
-                    if let Some(value) = event(packet, channel, connection.own_node) {
-                        apply(store, value, channel).await?;
+                if let Some(raw) = message.channel {
+                    let observed = decode_channel(&raw)?;
+                    channels.insert(observed.index, observed);
+                }
+                if let Some(raw) = message.config {
+                    if let Some(observed) = decode_lora_config(&raw)? {
+                        lora = Some(observed);
                     }
                 }
+                // Traffic arriving before the completed verified snapshot is discarded.
                 if message.configured == nonce && connection.own_node != 0 {
+                    for registered in &registered {
+                        let observed = channels
+                            .get(&registered.metadata.slot)
+                            .context("radio did not report a registered channel")?;
+                        if observed.role != if observed.index == 0 { 1 } else { 2 } {
+                            bail!("radio channel role differs from registry");
+                        }
+                        let settings = observed
+                            .settings
+                            .as_deref()
+                            .context("radio channel has no settings")?;
+                        let observed_lora = lora
+                            .as_deref()
+                            .context("radio did not report LoRa configuration")?;
+                        let fingerprint =
+                            channel_fingerprint(settings, Some(observed_lora), observed.index);
+                        store
+                            .validate_binding(&registered.metadata.id, &fingerprint)
+                            .await?;
+                        connection.bindings.insert(observed.index, fingerprint);
+                    }
                     return Ok::<_, anyhow::Error>(());
                 }
             }
@@ -359,6 +421,7 @@ impl<S: AsyncRead + AsyncWrite + Send + Unpin + 'static> Transport for SerialCon
                 channel,
                 id,
                 request_ack: true,
+                pki_encrypted: false,
                 data: Some(WireData {
                     port: 1,
                     payload: text.as_bytes().to_vec(),
@@ -370,7 +433,7 @@ impl<S: AsyncRead + AsyncWrite + Send + Unpin + 'static> Transport for SerialCon
                 ..Default::default()
             })
             .await?;
-            Ok(id.to_string())
+            Ok(format!("{channel}:{id}"))
         })
     }
     fn poll(&mut self) -> Result<Vec<RadioEvent>> {
@@ -378,8 +441,24 @@ impl<S: AsyncRead + AsyncWrite + Send + Unpin + 'static> Transport for SerialCon
         loop {
             match self.receiver.try_recv() {
                 Ok(message) => {
+                    if message.rebooted || message.channel.is_some() || message.config.is_some() {
+                        bail!("radio configuration changed; reconnect and verify before routing");
+                    }
+                    if message
+                        .identity
+                        .is_some_and(|identity| identity.node != self.own_node)
+                    {
+                        bail!("radio identity changed; reconnect before routing");
+                    }
                     if let Some(packet) = message.packet {
-                        if let Some(value) = event(packet, self.channel, self.own_node) {
+                        let channel = packet.channel;
+                        if !self.bindings.is_empty() && !self.bindings.contains_key(&channel) {
+                            continue;
+                        }
+                        if self.bindings.is_empty() && channel != self.channel {
+                            continue;
+                        }
+                        if let Some(value) = event(packet, channel, self.own_node) {
                             events.push(value);
                         }
                     }
@@ -395,6 +474,9 @@ impl<S: AsyncRead + AsyncWrite + Send + Unpin + 'static> Transport for SerialCon
             }
         }
     }
+    fn fingerprint(&self, channel: u32) -> Option<&str> {
+        self.bindings.get(&channel).map(String::as_str)
+    }
 }
 
 async fn apply(store: &Coordinator, event: RadioEvent, channel: u32) -> Result<()> {
@@ -408,7 +490,19 @@ async fn apply(store: &Coordinator, event: RadioEvent, channel: u32) -> Result<(
             channel: incoming,
             text,
         } => {
-            if incoming == i64::from(channel) && !text.trim().is_empty() && text.len() <= MAX_TEXT {
+            let registered = store.radio_channels().await?;
+            let admitted = if registered.is_empty() {
+                incoming == i64::from(channel)
+            } else {
+                match u32::try_from(incoming) {
+                    Ok(slot) => store
+                        .route_radio_channel(slot)
+                        .await?
+                        .is_some_and(|binding| binding.verified),
+                    Err(_) => false,
+                }
+            };
+            if admitted && !text.trim().is_empty() && text.len() <= MAX_TEXT {
                 store.receive(&packet_id, &node, &text, incoming).await?;
             }
         }
@@ -519,6 +613,30 @@ impl Worker {
                     .await?;
                 continue;
             }
+            let registered = self.store.radio_channels().await?;
+            let send_channel = if registered.is_empty() {
+                if self.mode == Adapter::Meshtastic {
+                    bail!("native radio requires commissioned channel bindings");
+                }
+                self.channel
+            } else {
+                let Some(fingerprint) = record.channel_fingerprint.as_deref() else {
+                    continue;
+                };
+                let Ok(binding) = self
+                    .store
+                    .validate_binding(&record.channel_id, fingerprint)
+                    .await
+                else {
+                    continue;
+                };
+                if self.mode == Adapter::Meshtastic
+                    && transport.fingerprint(binding.slot) != Some(fingerprint)
+                {
+                    bail!("live radio channel differs from durable message binding");
+                }
+                binding.slot
+            };
             let wire_text = match record.kind {
                 MessageKind::Alert | MessageKind::Urgent => format!(
                     "{} {}: {}",
@@ -538,7 +656,7 @@ impl Worker {
                 continue;
             }
             self.next_send = now + self.interval;
-            match transport.send(&wire_text, self.channel, id).await {
+            match transport.send(&wire_text, send_channel, id).await {
                 Ok(packet_id) => {
                     self.store
                         .transition(id, TransmissionUpdate::Submitted { packet_id })
@@ -603,7 +721,7 @@ pub fn start(store: Coordinator, config: &Value) -> Result<RadioHandle> {
                     let opened = tokio_serial::new(&worker.device, 115200).open_native_async();
                     let connected = match opened {
                         Ok(stream) => {
-                            tokio::select! { result = SerialConnection::connect(stream, worker.channel, &worker.store) => Some(result), _ = receiver.changed() => None }
+                            tokio::select! { result = SerialConnection::connect_checked(stream, worker.channel, &worker.store, true) => Some(result), _ = receiver.changed() => None }
                         }
                         Err(error) => Some(Err(error.into())),
                     };
@@ -665,6 +783,230 @@ mod tests {
     }
     fn simulator_config() -> Value {
         json!({"radio":{"adapter":"simulator","meshtastic":{"channel":2}}})
+    }
+    fn registered_fixture() -> (
+        tempfile::TempDir,
+        Coordinator,
+        Vec<crate::channel_store::RadioChannel>,
+    ) {
+        use crate::channel_store::{ChannelPlan, ChannelScope, PlannedChannel};
+        let directory = tempfile::tempdir().unwrap();
+        let store = EventStore::new(directory.path(), 1000, true).unwrap();
+        let channels = [
+            ("community", "AstralMesh", ChannelScope::Community),
+            ("staff", "Staff", ChannelScope::Staff),
+            ("medical", "Medical", ChannelScope::Department),
+        ]
+        .into_iter()
+        .enumerate()
+        .map(|(slot, (id, name, scope))| PlannedChannel {
+            id: id.into(),
+            scope,
+            slot: slot as u32,
+            settings: crate::channels::generated(name).unwrap().settings,
+        })
+        .collect();
+        store
+            .install_channel_plan(&ChannelPlan {
+                channels,
+                lora: Some(vec![0x08, 0x01]),
+            })
+            .unwrap();
+        let observed: Vec<_> = store
+            .radio_channels()
+            .unwrap()
+            .into_iter()
+            .map(|channel| (channel.metadata.slot, channel.metadata.fingerprint))
+            .collect();
+        store.mark_deployment_verified(&observed).unwrap();
+        let material = store.radio_channels().unwrap();
+        (directory, Coordinator::start(store, 7), material)
+    }
+
+    struct VerifiedTransport {
+        simulator: Simulator,
+        bindings: HashMap<u32, String>,
+    }
+    impl Transport for VerifiedTransport {
+        fn send<'a>(&'a mut self, text: &'a str, channel: u32, id: &'a str) -> SendFuture<'a> {
+            self.simulator.send(text, channel, id)
+        }
+        fn poll(&mut self) -> Result<Vec<RadioEvent>> {
+            self.simulator.poll()
+        }
+        fn fingerprint(&self, slot: u32) -> Option<&str> {
+            self.bindings.get(&slot).map(String::as_str)
+        }
+    }
+
+    #[tokio::test]
+    async fn durable_channel_binding_selects_correct_slot_and_blocks_changed_live_key() {
+        let (_directory, store, material) = registered_fixture();
+        let staff = message(&store, "Staff work").await;
+        let medical = store
+            .create(
+                NewRecord::message(MessageText::new("Medical work").unwrap(), "staff")
+                    .unwrap()
+                    .on_channel("medical")
+                    .unwrap(),
+            )
+            .await
+            .unwrap();
+        let config = json!({"radio":{"adapter":"meshtastic","meshtastic":{"device":"/dev/serial/by-id/fake","sendIntervalSeconds":30}}});
+        let mut worker = Worker::new(store.clone(), &config).unwrap();
+        let mut transport = VerifiedTransport {
+            simulator: Simulator::default(),
+            bindings: material
+                .iter()
+                .map(|channel| (channel.metadata.slot, channel.metadata.fingerprint.clone()))
+                .collect(),
+        };
+        worker.step(&mut transport, 0.0).await.unwrap();
+        assert_eq!(transport.simulator.sent[0].1, 1);
+        assert_eq!(
+            record(&store, &staff.id).await.state,
+            TransmissionState::Submitted
+        );
+        transport.bindings.insert(2, "changed-key".into());
+        assert!(worker.step(&mut transport, 30.0).await.is_err());
+        assert_eq!(transport.simulator.sent.len(), 1);
+        assert_eq!(
+            record(&store, &medical.id).await.state,
+            TransmissionState::Queued
+        );
+        transport
+            .bindings
+            .insert(2, material[2].metadata.fingerprint.clone());
+        worker.step(&mut transport, 31.0).await.unwrap();
+        assert_eq!(transport.simulator.sent[1].1, 2);
+    }
+
+    #[derive(Clone, PartialEq, Message)]
+    struct ReadbackChannel {
+        #[prost(uint32, tag = "1")]
+        index: u32,
+        #[prost(bytes = "vec", optional, tag = "2")]
+        settings: Option<Vec<u8>>,
+        #[prost(int32, tag = "3")]
+        role: i32,
+    }
+    #[derive(Clone, PartialEq, Message)]
+    struct ReadbackConfig {
+        #[prost(bytes = "vec", optional, tag = "6")]
+        lora: Option<Vec<u8>>,
+    }
+
+    #[tokio::test]
+    async fn handshake_verifies_actual_settings_and_refuses_wrong_private_key() {
+        let (_directory, store, material) = registered_fixture();
+        let (client, mut radio) = tokio::io::duplex(4096);
+        let device = tokio::spawn(async move {
+            let request = EnvelopeOut::decode(read_message(&mut radio).await.as_slice()).unwrap();
+            radio
+                .write_all(
+                    &framed(&EnvelopeIn {
+                        identity: Some(NodeIdentity { node: 9 }),
+                        ..Default::default()
+                    })
+                    .unwrap(),
+                )
+                .await
+                .unwrap();
+            radio
+                .write_all(
+                    &framed(&EnvelopeIn {
+                        config: Some(
+                            ReadbackConfig {
+                                lora: material[0].lora.clone(),
+                            }
+                            .encode_to_vec(),
+                        ),
+                        ..Default::default()
+                    })
+                    .unwrap(),
+                )
+                .await
+                .unwrap();
+            for channel in material {
+                let settings = if channel.metadata.slot == 1 {
+                    crate::channels::generated("Staff").unwrap().settings
+                } else {
+                    channel.settings
+                };
+                radio
+                    .write_all(
+                        &framed(&EnvelopeIn {
+                            channel: Some(
+                                ReadbackChannel {
+                                    index: channel.metadata.slot,
+                                    role: if channel.metadata.slot == 0 { 1 } else { 2 },
+                                    settings: Some(settings),
+                                }
+                                .encode_to_vec(),
+                            ),
+                            ..Default::default()
+                        })
+                        .unwrap(),
+                    )
+                    .await
+                    .unwrap();
+            }
+            radio
+                .write_all(
+                    &framed(&EnvelopeIn {
+                        configured: request.config_request,
+                        ..Default::default()
+                    })
+                    .unwrap(),
+                )
+                .await
+                .unwrap();
+        });
+        assert!(
+            SerialConnection::connect_checked(client, 1, &store, true)
+                .await
+                .is_err()
+        );
+        device.await.unwrap();
+    }
+
+    #[test]
+    fn direct_and_pki_messages_cannot_become_public_or_department_broadcasts() {
+        let broadcast = WirePacket {
+            sender: 10,
+            destination: u32::MAX,
+            id: 42,
+            channel: 0,
+            data: Some(WireData {
+                port: 1,
+                payload: b"Public hello".to_vec(),
+                ..Default::default()
+            }),
+            ..Default::default()
+        };
+        assert!(event(broadcast.clone(), 0, 9).is_some());
+        assert!(
+            event(
+                WirePacket {
+                    destination: 9,
+                    ..broadcast.clone()
+                },
+                0,
+                9
+            )
+            .is_none()
+        );
+        assert!(
+            event(
+                WirePacket {
+                    pki_encrypted: true,
+                    ..broadcast
+                },
+                0,
+                9
+            )
+            .is_none()
+        );
     }
     async fn message(store: &Coordinator, text: &str) -> crate::domain::Record {
         store
@@ -728,6 +1070,7 @@ mod tests {
     fn packet_decoder_filters_private_channel_and_preserves_identity() {
         let packet = WirePacket {
             sender: 0x1234,
+            destination: u32::MAX,
             id: 77,
             channel: 2,
             data: Some(WireData {
@@ -766,7 +1109,7 @@ mod tests {
             ..Default::default()
         };
         assert!(
-            matches!(event(routing_packet(Routing { error:Some(0), ..Default::default() }),2,9),Some(RadioEvent::Confirmation(id)) if id=="101")
+            matches!(event(routing_packet(Routing { error:Some(0), ..Default::default() }),2,9),Some(RadioEvent::Confirmation(id)) if id=="2:101")
         );
         assert!(
             event(
@@ -806,7 +1149,7 @@ mod tests {
             .transition(
                 &item.id,
                 TransmissionUpdate::Submitted {
-                    packet_id: "101".into(),
+                    packet_id: "2:101".into(),
                 },
             )
             .await
@@ -936,7 +1279,7 @@ mod tests {
             .send("USB submission", 2, "record-id")
             .await
             .unwrap();
-        assert_eq!(id, radio_task.await.unwrap().to_string());
+        assert_eq!(id, format!("2:{}", radio_task.await.unwrap()));
     }
 
     #[tokio::test]
@@ -1093,6 +1436,7 @@ mod tests {
             reader: tokio::spawn(std::future::pending()),
             own_node: 9,
             channel: 2,
+            bindings: HashMap::new(),
         };
         let mut worker = Worker::new(store.clone(), &simulator_config()).unwrap();
         assert!(!worker.step(&mut transport, 0.0).await.unwrap());

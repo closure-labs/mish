@@ -12,9 +12,8 @@ flowchart LR
   AP --> App[NixOS coordinator]
   App --> DB[(SQLite journal and outbox)]
   App <--> USB[USB Meshtastic radio]
-  USB <--> RF[Staff radios and RF relays]
-  App --> Public[Explicit announcement projection]
-  Attendees[Attendee browsers] --> Public
+  USB <--> Community[Community primary channel]
+  USB <--> Private[Private staff and department channels]
 ```
 
 ## Evidence inventory
@@ -51,15 +50,22 @@ with the source revision, command, environment and result.
    commissioning. Application authorization is independent of the deferred
    OpenZiti stub. Runtime credentials and radio channel keys are absent from
    shared images and the Nix store.
-3. Treat authenticated staff and operators as distinct roles. Operators enroll
-   staff and publish announcements. Public reads return only publication text
-   and publication metadata, not private source objects.
+3. Treat web identity and radio channel membership as separate controls.
+   Operators enroll staff and explicitly assign department membership. One
+   community primary channel permits public radio participation; private
+   secondary channels use independent 32-byte keys. A public join QR contains
+   only community configuration. Department enrollment includes the community
+   channel and the selected authorized department. Revoking a web credential
+   does not remove a copied radio key; rotate affected keys and re-enroll radios.
 4. Use stable `/dev/serial/by-id` radio paths, explicit serial permissions and
    reconnect backoff. Receive records do not automatically re-enter the outbox.
    Ambiguous transmission remains uncertain rather than claiming success.
    Snapshot restores quarantine pending sends: a backup cannot establish
    whether the original coordinator transmitted them after capture. Ordinary
    restarts retain their genuine pending queue.
+   Configuration writes are a separate explicit operator provisioning action
+   with readback verification; reconnect does not automatically reconfigure
+   attached hardware.
 5. Use Mish consistently for the CLI, Rust package, Nix modules, image
    targets and runtime paths. The full rename is authorized before the first
    deployment. Keep simulation clearly labelled and opt-in. Defer Matrix,
@@ -72,12 +78,17 @@ with the source revision, command, environment and result.
 
 ## Milestone dependencies
 
+The [channel-enrollment design](channel-enrollment.md) extends these milestones
+with existing-channel import, generated event meshes, public/private QR scope
+and verified USB provisioning. The Rust implementation has behavioral tests; previous
+application/VM checks do not establish those new behaviors.
+
 | Milestone | Depends on | Deliverable | Acceptance gate |
 |---|---|---|---|
 | M0 baseline and CI | Existing repository audit | Traversal/malformed-input fixes, supported pin, initial checks | Existing behavior passes and regressions reject unsafe input |
 | M1 x86 proof of concept | M0 | QEMU app, SQLite journal/outbox, deterministic radio simulator | Two staff exchange text, create/ack an alert and retain state across restart |
-| M2 real mesh | M1 | USB receive/transmit/reconnect, private staff channel | Physical mini-PC and two radios exchange text and human ACKs with WAN unplugged |
-| M3 event kit | M1 and M2 acceptance | Installer, enrollment, local HTTPS, backup/restore, rollback and public feed | Fresh install reaches first staff message using the runbook |
+| M2 real mesh | M1 | USB receive/transmit/reconnect, community and private channels | Physical radios join intended channels and exchange text/ACKs without WAN; private traffic remains on its intended channel |
+| M3 event kit | M1 and M2 acceptance | Installer, channel import/generation, scoped QR enrollment, verified provisioning, local HTTPS and recovery | Fresh installation provisions a radio with verified readback and reaches community/staff communication using the runbook |
 | M4 ARM qualification | M3 | Same app/adapter on Pi 4 SD image | Pi 4 with 4 GB RAM passes physical commissioning and resilience checks |
 | M5 field pilot | M3 and M4 | Rehearsal, RF/resource measurements, artifacts | Small-event checklist passes and remaining limitations are documented |
 
@@ -101,10 +112,33 @@ responded. Expired alerts cannot gain fresh acknowledgements or be transmitted
 as active alerts. Duplicate packets must not create duplicate records or
 repeated acknowledgements.
 
-Shared Meshtastic channel membership permits transmission. A public RF channel
-would therefore be a community surface, not a read-only announcement service.
-Incoming RF posts never become official announcements automatically. Dedicated
-emergency dispatch procedures are outside this first release.
+Shared Meshtastic channel membership permits transmission. The community
+channel is intentionally a participatory radio surface. The former read-only
+attendee announcement feed is superseded as the public product model; community
+browser writes remain a separate interface decision. Existing announcement
+routes do not substitute for channel enrollment. Radio access does not create
+an authenticated staff web identity. Dedicated emergency dispatch procedures
+are outside this first release.
+
+## Channel configuration and enrollment
+
+Use one community primary and private secondary channels, with eight total
+radio slots and names limited to 11 UTF-8 bytes. An event label may be longer:
+Astral Valley can use `AstralMesh` as its radio channel name. Generate full
+256-bit community keys and independent 32-byte keys for every private channel.
+Store secret material only in protected runtime state and authorized private
+enrollment artifacts, never shared images or public responses.
+
+Importing a single PRIMARY community URI preserves LoRa settings and opaque unknown
+configuration fields. Preview the intended slot layout before an explicit USB
+write, then verify hardware readback before reporting successful provisioning.
+Generate QR enrollment locally in the Rust runtime. A public QR includes only
+community configuration; a department QR includes community plus the selected
+authorized department. Additional staff channels require explicit membership.
+Copied private keys require radio reconfiguration or key rotation for removal.
+Multi-channel community imports are rejected to keep private channel settings
+out of the public enrollment projection.
+See [channel-enrollment.md](channel-enrollment.md) for the detailed gate checklist.
 
 ## Operating targets
 

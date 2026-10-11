@@ -201,12 +201,12 @@ in
         device = lib.mkOption {
           type = lib.types.str;
           default = "/dev/serial/by-id/REPLACE-WITH-RADIO-ID";
-          description = "Stable USB radio device path; configure the private channel on the radio during commissioning.";
+          description = "Stable USB radio device path used by explicit channel commissioning and the verified messaging adapter.";
         };
         channel = lib.mkOption {
           type = lib.types.ints.between 0 7;
           default = 0;
-          description = "Configured private staff channel index.";
+          description = "Legacy simulator channel index; native radio routing uses the verified runtime channel registry.";
         };
         sendIntervalSeconds = lib.mkOption {
           type = lib.types.ints.positive;

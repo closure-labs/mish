@@ -6,8 +6,9 @@ location packs and several radio transports. Those proposals were design
 options, not evidence of delivered capabilities.
 
 The current direction narrows the product to an offline, owner-operated event
-appliance: private staff text, operational alerts with explicit acknowledgements
-and a separately published, read-only attendee feed. One local coordinator owns
+appliance: a participatory community mesh, private staff/department coordination
+and operational alerts with explicit acknowledgements. Channel enrollment and
+verified USB provisioning are being added under that selected design. One local coordinator owns
 the SQLite journal and outbound queue. The application serves bundled browser
 assets, with Caddy local HTTPS and a USB Meshtastic adapter.
 
@@ -17,7 +18,8 @@ assets, with Caddy local HTTPS and a USB Meshtastic adapter.
 |---|---|
 | OpenZiti as the appliance's access fabric | Staff/operator bearer authorization protects the current app; the optional OpenZiti services are health stubs |
 | Matrix as the delivered collaboration layer | The bundled local staff app supplies event messaging; Matrix providers remain optional health stubs |
-| Nostr as the official announcement path | Operators publish into a separate local attendee projection; existing mock/file Nostr facilities are development tools |
+| Nostr as the official announcement path | Community participation uses Meshtastic enrollment; existing mock/file Nostr facilities are development tools |
+| Read-only attendee announcements as the public product | Public QR enrollment intentionally grants community radio transmission; older announcement routes remain compatibility facilities |
 | Multiple radio transports in the first acceptance gate | Qualify one USB Meshtastic path first; Reticulum daemon wiring has no application bridge |
 | GeoPacks and location exchange as core event workflows | Retain existing development interfaces while deferring expansion |
 | Broad board and home-server release targets | Start with x86_64, then physically qualify Pi 4 with 4 GB RAM; other profiles are experimental |

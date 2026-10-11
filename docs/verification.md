@@ -109,3 +109,46 @@ This verification-record update is submitted without manual queue enrollment
 to exercise the installed workflow. Its PR timeline and Merge queue Actions run
 record automatic admission separately from the bootstrap PR's validation.
 See [merge-queue.md](merge-queue.md) for eligibility, permissions and retry behavior.
+
+## Shared cache and qualification gates
+
+[PR #16](https://github.com/closure-labs/mish/pull/16) merged as `e6cd187`.
+Main [Checks run 38181091031](https://github.com/closure-labs/mish/actions/runs/38181091031)
+uploaded Mish, developer-shell and native check outputs to signed Cachix.
+[Cold-cache run 38181529187](https://github.com/closure-labs/mish/actions/runs/38181529187)
+passed on both native architectures with GitHub store restores disabled and
+showed those outputs downloaded from `mish.cachix.org` without upload credentials.
+[Images run 38181091160](https://github.com/closure-labs/mish/actions/runs/38181091160)
+built both architectures and uploaded image closures. JavaScript actions use
+Node 24 at pinned commits.
+
+[PR #17](https://github.com/closure-labs/mish/pull/17) merged as `3061197`.
+[Checks run 38183355942](https://github.com/closure-labs/mish/actions/runs/38183355942)
+passed both native contexts and Software qualification. Active queue rules now
+require all three; workflow dependency and release artifact validation fail
+closed. Metadata jobs do not claim native validation snapshot keys.
+
+## Community and private channel enrollment
+
+The Rust feature has 68 passing behavioral tests and seven Node 24 channel
+selection tests. The original 64-test suite passed in a single bounded run;
+the four added USB deployment tests and strengthened malformed-plan regression
+then passed separately. Strict Clippy and Rust/Nix formatting checks passed.
+Every local command ran through `scripts/local-nix.sh` and `nix develop`, with
+one compiler job and a 2 GiB process scope. Full all-system/VM/image validation
+is delegated to native GitHub runners to protect the workstation.
+
+The tests cover independent 32-byte keys, exact community/private QR scopes,
+department read/write/ACK authorization, cross-channel radio ACK rejection,
+durable channel fingerprints, restore re-verification and 501-record flood
+visibility. Simulated USB fixtures exercise the production apply path for
+successful readback, wrong settings, disconnect after mutation and unrelated
+RF drift, with a protected recovery snapshot before each write.
+
+Independent security review approved after fixing the staff browser's initial
+channel selection and applying journal access filtering before its result
+limit. Keys and RF settings are checked on radio connection and reported
+configuration changes, not continuously against unreported external edits.
+Physical Meshtastic app QR import, USB firmware interoperability and RF
+communication remain unverified. Native GitHub qualification and queue evidence
+for this feature will be recorded against its committed revision.

@@ -27,6 +27,10 @@ pkgs.testers.nixosTest {
     machine.succeed("test $(curl -s -o /dev/null -w '%{http_code}' http://127.0.0.1:8787/api/messages) = 401")
     machine.succeed("curl --fail --silent http://127.0.0.1:8787/public/announcements")
     import json
+    assert json.loads(machine.succeed("curl --fail --silent http://127.0.0.1:8787/public/channels")) == {"channels": []}
+    assert "Join the event mesh" in machine.succeed("curl --fail --silent http://127.0.0.1:8787/public")
+    assert "chooseChannel" in machine.succeed("curl --fail --silent http://127.0.0.1:8787/channel-selection.js")
+    machine.succeed("test $(curl -s -o /dev/null -w '%{http_code}' http://127.0.0.1:8787/api/channels) = 401")
     operator = json.loads(machine.succeed("mish --state-dir /var/lib/mish commission --name Operator"))
     token = operator["token"]
     def request(method, path, payload=None, bearer=token):
@@ -50,6 +54,7 @@ pkgs.testers.nixosTest {
     restored_alert = next(item for item in messages["messages"] if item["id"] == alert["id"])
     assert any(ack["actor"] == staff["id"] for ack in restored_alert["acknowledgements"])
     assert "Private restart test" not in machine.succeed("curl --fail --silent http://127.0.0.1:8787/public/announcements")
+    assert json.loads(machine.succeed("curl --fail --silent http://127.0.0.1:8787/public/channels")) == {"channels": []}
 
     announcement = request("POST", "/api/announcements", {"text": "Water station open"})
     machine.succeed("systemctl stop mish-control.service")

@@ -23,7 +23,7 @@ Record command, architecture and pass/fail result separately for:
 - [ ] Traversal, malformed/oversized requests, unauthorized private reads and writes rejected.
 - [ ] Private messages, identities, positions and unpublished alerts absent from public responses.
 - [ ] Queued messages and acknowledgement history survive service restart.
-- [ ] Snapshot recovery preserves credentials, published feed and browser/radio ACKs; restored pending sends remain uncertain and never replay automatically.
+- [ ] Snapshot recovery preserves channel keys, memberships, credentials and ACKs; radio verification is reset and pending sends remain uncertain.
 - [ ] Corrupt/incompatible backups and existing restore targets are rejected without overwriting state.
 - [ ] Duplicate packets, disconnects, uncertain sends, expired alerts and exhausted queues do not report false success.
 
@@ -31,12 +31,13 @@ Record command, architecture and pass/fail result separately for:
 
 - [ ] Begin with a fresh x86 installation and external Ethernet-connected AP.
 - [ ] Disconnect WAN before enrollment and first message.
-- [ ] Configure the private staff radio channel independently of the image.
+- [ ] Join an existing primary community channel or generate the regional mesh; deploy and verify the coordinator's private staff/department channels.
 - [ ] Verify stable USB path and explicit service permissions.
 - [ ] Trust local CA on two staff devices; enroll distinct staff identities.
 - [ ] Exchange browser text; create alert with owner and expiry; acknowledge as another staff member.
 - [ ] Two physical radios exchange text through the adapter and send `ACK <ID>` with recorded node/channel provenance.
-- [ ] Publish one announcement; attendee without credentials sees only that published text/metadata.
+- [ ] Public QR enrolls two community radios that exchange text without WAN; its decoded configuration contains no private keys.
+- [ ] Staff and each department QR enroll the intended private channels; unauthorized browser/private exports fail and community radios cannot receive private traffic.
 - [ ] Record elapsed commissioning time against the 30-minute target.
 - [ ] Repeat on Pi 4 with 4 GB RAM before qualifying the ARM target.
 
@@ -46,7 +47,7 @@ Record command, architecture and pass/fail result separately for:
 - [ ] Lose LAN connectivity, reconnect and reconcile durable records.
 - [ ] Restart application and reboot appliance; history and queues persist.
 - [ ] Interrupt power after durable acceptance; accepted records survive.
-- [ ] Restore a backup onto a spare; verify messages, publication and acknowledgement history.
+- [ ] Restore a backup onto a spare; verify scoped journal, membership and ACK history, then independently verify its radio configuration.
 - [ ] Review quarantined snapshot sends and demonstrate new messages transmit after recovery.
 - [ ] Roll back a software generation; verify runtime/database compatibility.
 - [ ] Stop coordinator; two staff radios still communicate directly.

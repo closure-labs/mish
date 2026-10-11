@@ -1,4 +1,5 @@
 //! Bounded commands to the authoritative SQLite owner. Database I/O never blocks Tokio.
+use crate::channel_store::{ChannelMetadata, EnrollmentExport, RadioChannel};
 use crate::{appliance::EventStore, domain::*};
 use anyhow::{Result, anyhow};
 use tokio::sync::{mpsc, oneshot};
@@ -11,6 +12,15 @@ enum Command {
     Create(NewRecord, Reply<Record>),
     Record(String, Reply<Option<Record>>),
     Records(Reply<Vec<Record>>),
+    RecordsFor(StaffIdentity, Reply<Vec<Record>>),
+    RecordsForChannel(StaffIdentity, String, Reply<Vec<Record>>),
+    CreateAs(StaffIdentity, NewRecord, Reply<Record>),
+    Channels(Option<StaffIdentity>, Reply<Vec<ChannelMetadata>>),
+    ChannelEnrollment(String, Option<StaffIdentity>, Reply<EnrollmentExport>),
+    ChannelAccess(String, String, String, bool, Reply<()>),
+    RadioChannels(Reply<Vec<RadioChannel>>),
+    Binding(String, String, Reply<ChannelMetadata>),
+    RadioRoute(u32, Reply<Option<ChannelMetadata>>),
     Acknowledge(
         String,
         String,
@@ -56,6 +66,37 @@ impl Coordinator {
                     }
                     Command::Records(reply) => {
                         let _ = reply.send(store.records());
+                    }
+                    Command::RecordsFor(actor, reply) => {
+                        let _ = reply.send(store.records_for(&actor));
+                    }
+                    Command::RecordsForChannel(actor, id, reply) => {
+                        let _ = reply.send(store.records_for_channel(&actor, &id));
+                    }
+                    Command::CreateAs(actor, value, reply) => {
+                        let _ = reply.send(store.create_as(&actor, value));
+                    }
+                    Command::Channels(actor, reply) => {
+                        let _ = reply.send(store.channel_catalog(actor.as_ref()));
+                    }
+                    Command::ChannelEnrollment(id, actor, reply) => {
+                        let _ = reply.send(store.enrollment(&id, actor.as_ref()));
+                    }
+                    Command::ChannelAccess(operator, staff, channel, grant, reply) => {
+                        let _ = reply.send(if grant {
+                            store.grant_channel_access(&operator, &staff, &channel)
+                        } else {
+                            store.revoke_channel_access(&operator, &staff, &channel)
+                        });
+                    }
+                    Command::RadioChannels(reply) => {
+                        let _ = reply.send(store.radio_channels());
+                    }
+                    Command::Binding(id, fingerprint, reply) => {
+                        let _ = reply.send(store.validate_binding(&id, &fingerprint));
+                    }
+                    Command::RadioRoute(slot, reply) => {
+                        let _ = reply.send(store.route_radio_channel(slot));
                     }
                     Command::Acknowledge(id, actor, source, node, channel, reply) => {
                         let _ = reply.send(store.acknowledge(
@@ -120,6 +161,49 @@ impl Coordinator {
     }
     pub async fn records(&self) -> Result<Vec<Record>> {
         self.request(Command::Records).await
+    }
+    pub async fn records_for(&self, actor: StaffIdentity) -> Result<Vec<Record>> {
+        self.request(|r| Command::RecordsFor(actor, r)).await
+    }
+    pub async fn records_for_channel(&self, actor: StaffIdentity, id: &str) -> Result<Vec<Record>> {
+        self.request(|r| Command::RecordsForChannel(actor, id.into(), r))
+            .await
+    }
+    pub async fn create_as(&self, actor: StaffIdentity, value: NewRecord) -> Result<Record> {
+        self.request(|r| Command::CreateAs(actor, value, r)).await
+    }
+    pub async fn channels(&self, actor: Option<StaffIdentity>) -> Result<Vec<ChannelMetadata>> {
+        self.request(|r| Command::Channels(actor, r)).await
+    }
+    pub async fn channel_enrollment(
+        &self,
+        id: &str,
+        actor: Option<StaffIdentity>,
+    ) -> Result<EnrollmentExport> {
+        self.request(|r| Command::ChannelEnrollment(id.into(), actor, r))
+            .await
+    }
+    pub async fn channel_access(
+        &self,
+        operator: &str,
+        staff: &str,
+        channel: &str,
+        grant: bool,
+    ) -> Result<()> {
+        self.request(|r| {
+            Command::ChannelAccess(operator.into(), staff.into(), channel.into(), grant, r)
+        })
+        .await
+    }
+    pub async fn radio_channels(&self) -> Result<Vec<RadioChannel>> {
+        self.request(Command::RadioChannels).await
+    }
+    pub async fn validate_binding(&self, id: &str, fingerprint: &str) -> Result<ChannelMetadata> {
+        self.request(|r| Command::Binding(id.into(), fingerprint.into(), r))
+            .await
+    }
+    pub async fn route_radio_channel(&self, slot: u32) -> Result<Option<ChannelMetadata>> {
+        self.request(|r| Command::RadioRoute(slot, r)).await
     }
     pub async fn acknowledge(
         &self,
