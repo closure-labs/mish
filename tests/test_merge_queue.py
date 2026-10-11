@@ -57,6 +57,18 @@ class QueueTests(unittest.TestCase):
         self.assertIn('query=' + queue_prs.ENQUEUE, mutation)
         ensure.assert_called_once_with('closure-labs/mish', 7)
 
+    def test_native_success_cannot_bypass_software_qualification(self):
+        for state in ['FAILURE', 'CANCELLED', 'SKIPPED', 'NEUTRAL', None]:
+            pr = copy.deepcopy(self.pr)
+            gate = next(check for check in pr['statusCheckRollup'] if check['name'] == 'Software qualification')
+            gate['conclusion'] = state
+            with self.subTest(state=state):
+                self.assertFalse(queue_prs.eligible(pr, self.queue, 'closure-labs/mish'))
+        pr = copy.deepcopy(self.pr)
+        pr['statusCheckRollup'] = [check for check in pr['statusCheckRollup']
+                                   if check['name'] != 'Software qualification']
+        self.assertFalse(queue_prs.eligible(pr, self.queue, 'closure-labs/mish'))
+
     def test_dry_run_and_existing_entry_do_not_enqueue(self):
         for entry, dry_run in ((None, True), ({'id': 'entry'}, False)):
             with patch.object(queue_prs, 'gh', side_effect=[[{'number': 7}], self.pr]) as gh, \

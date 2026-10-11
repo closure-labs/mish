@@ -1,6 +1,6 @@
 # Automatic pull request queueing
 
-Main requires pull requests, both native Checks jobs from GitHub Actions and
+Main requires pull requests, both native Checks jobs and Software qualification from GitHub Actions and
 an ALLGREEN merge queue. The active repository ruleset is `24893052`; its
 configuration is recorded in `.github/merge-queue-rules.json`. One queue group
 builds at a time, and its combined commit must pass the same x86 and ARM
@@ -8,7 +8,7 @@ checks before GitHub merges it. There are no bypass actors.
 
 The Merge queue workflow runs trusted `main` automation after a successful PR
 Checks run. It admits open, non-draft PRs from this repository's branches,
-including Dependabot, only after both current-head native jobs pass. Stale
+including Dependabot, only after both current-head native jobs and the aggregate software gate pass. Stale
 heads, conflicts, missing/failed checks and required-review blockers wait.
 External fork admission remains an explicit maintainer action. Turning a
 draft into a ready PR triggers Checks again.

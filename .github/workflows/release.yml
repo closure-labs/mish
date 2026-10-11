@@ -5,7 +5,28 @@ on:
 permissions:
   contents: read
 jobs:
+  qualify:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          fetch-depth: 0
+      - uses: ./.github/actions/nix
+        with:
+          public-key: ${{ vars.CACHIX_PUBKEY || 'mish.cachix.org-1:TVqZ5PamlcnYEpNEJtBz7xNmS7H5X/gXQXYVeDBD4FY=' }}
+          restore-store: 'false'
+      - name: Validate gate policy and record qualification dependencies
+        run: nix develop --accept-flake-config --command python .github/scripts/qualification.py
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9
+        with:
+          name: qualification-${{ github.workflow }}-${{ github.sha }}
+          path: artifacts/qualification*
+          if-no-files-found: error
+          retention-days: 14
   images:
+    needs: qualify
+    if: always()
     strategy:
       fail-fast: false
       matrix:
@@ -19,6 +40,10 @@ jobs:
     runs-on: ${{ matrix.runner }}
     timeout-minutes: 240
     steps:
+      - name: Require successful qualification policy
+        env:
+          QUALIFIER_RESULT: ${{ needs.qualify.result }}
+        run: test "$QUALIFIER_RESULT" = success
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
       - uses: ./.github/actions/nix
         with:
@@ -36,13 +61,15 @@ jobs:
           SYSTEM: ${{ matrix.system }}
           MISH_CACHE_UPLOAD: ${{ github.event_name == 'push' && startsWith(github.ref, 'refs/tags/v') }}
         run: nix develop --accept-flake-config --command bash .github/scripts/cache-outputs.sh
+      - name: Verify complete artifact checksums
+        run: nix develop --accept-flake-config --command bash -c 'cd artifacts && sha256sum --check SHA256SUMS'
       - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9
         with:
           name: images-${{ matrix.system }}
           path: artifacts/
           retention-days: 14
   draft:
-    needs: images
+    needs: [qualify, images]
     runs-on: ubuntu-24.04
     timeout-minutes: 15
     permissions:
@@ -54,7 +81,10 @@ jobs:
           public-key: ${{ vars.CACHIX_PUBKEY || 'mish.cachix.org-1:TVqZ5PamlcnYEpNEJtBz7xNmS7H5X/gXQXYVeDBD4FY=' }}
       - uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333
         with:
+          pattern: images-*
           path: artifacts
+      - name: Verify downloaded image integrity and source identity
+        run: nix develop --accept-flake-config --command python .github/scripts/qualification.py --artifact-root artifacts
       - name: Create draft pending physical acceptance
         env:
           GH_TOKEN: ${{ github.token }}

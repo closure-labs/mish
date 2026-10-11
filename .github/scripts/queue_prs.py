@@ -9,7 +9,7 @@ import time
 
 
 CHECKS = {'checks (ubuntu-24.04, x86_64-linux)',
-          'checks (ubuntu-24.04-arm, aarch64-linux)'}
+          'checks (ubuntu-24.04-arm, aarch64-linux)', 'Software qualification'}
 DETAILS = '''query($owner:String!,$repo:String!,$number:Int!) {
   repository(owner:$owner,name:$repo) { pullRequest(number:$number) {
     id headRefOid isMergeQueueEnabled mergeQueueEntry { id position headCommit { oid } }

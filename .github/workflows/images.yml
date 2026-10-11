@@ -11,7 +11,28 @@ concurrency:
   group: images-${{ github.ref }}
   cancel-in-progress: true
 jobs:
+  qualify:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          fetch-depth: 0
+      - uses: ./.github/actions/nix
+        with:
+          public-key: ${{ vars.CACHIX_PUBKEY || 'mish.cachix.org-1:TVqZ5PamlcnYEpNEJtBz7xNmS7H5X/gXQXYVeDBD4FY=' }}
+          restore-store: 'false'
+      - name: Validate gate policy and record qualification dependencies
+        run: nix develop --accept-flake-config --command python .github/scripts/qualification.py
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9
+        with:
+          name: qualification-${{ github.workflow }}-${{ github.sha }}
+          path: artifacts/qualification*
+          if-no-files-found: error
+          retention-days: 14
   images:
+    needs: qualify
+    if: always()
     strategy:
       fail-fast: false
       matrix:
@@ -25,11 +46,17 @@ jobs:
     runs-on: ${{ matrix.runner }}
     timeout-minutes: 240
     steps:
+      - name: Require successful qualification policy
+        env:
+          QUALIFIER_RESULT: ${{ needs.qualify.result }}
+        run: test "$QUALIFIER_RESULT" = success
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
       - uses: ./.github/actions/nix
         with:
           public-key: ${{ vars.CACHIX_PUBKEY || 'mish.cachix.org-1:TVqZ5PamlcnYEpNEJtBz7xNmS7H5X/gXQXYVeDBD4FY=' }}
           token: ${{ github.ref == 'refs/heads/main' && (github.event_name == 'push' || github.event_name == 'schedule' || github.event_name == 'workflow_dispatch') && secrets.CACHIX_TOKEN || '' }}
+      - run: nix flake check --all-systems --no-build --accept-flake-config
+      - run: nix flake check -L --accept-flake-config
       - name: Build committed inputs and archive complete closures
         env:
           SYSTEM: ${{ matrix.system }}
@@ -40,8 +67,28 @@ jobs:
           SYSTEM: ${{ matrix.system }}
           MISH_CACHE_UPLOAD: ${{ github.ref == 'refs/heads/main' && (github.event_name == 'push' || github.event_name == 'schedule' || github.event_name == 'workflow_dispatch') }}
         run: nix develop --accept-flake-config --command bash .github/scripts/cache-outputs.sh
+      - name: Verify complete artifact checksums
+        run: nix develop --accept-flake-config --command bash -c 'cd artifacts && sha256sum --check SHA256SUMS'
       - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9
         with:
           name: images-${{ matrix.system }}
           path: artifacts/
           retention-days: 14
+  qualified:
+    name: Image qualification
+    needs: [qualify, images]
+    if: always()
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          fetch-depth: 0
+      - uses: ./.github/actions/nix
+        with:
+          public-key: ${{ vars.CACHIX_PUBKEY || 'mish.cachix.org-1:TVqZ5PamlcnYEpNEJtBz7xNmS7H5X/gXQXYVeDBD4FY=' }}
+          restore-store: 'false'
+      - name: Fail unless every declared prerequisite succeeded
+        env:
+          GATE_RESULTS: ${{ toJSON(needs) }}
+        run: nix develop --accept-flake-config --command python .github/scripts/qualification.py --results "$GATE_RESULTS" --expected qualify images

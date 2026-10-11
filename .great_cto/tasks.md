@@ -112,5 +112,26 @@ Physical hardware and field-pilot acceptance remain open.
 - [x] Workstation resource constraint: stopped overlapping evaluations/builds.
   Added one local lock, one Nix job/core, and a 2 GiB user scope that includes
   shell startup. Full native/VM/image validation runs on GitHub runners.
-- [ ] GitHub native checks and queue delivery.
-- [ ] Main workflow upload and subsequent signed-cache reuse verified.
+- [x] GitHub native checks and queue delivery: PR #16 merged as `e6cd187`.
+- [x] Main upload and signed-cache reuse: Checks run 38181091031 uploaded
+  outputs; cold-cache run 38181529187 passed on both native runners with GitHub
+  store restores disabled. Logs show package, shell and check outputs copied
+  from `https://mish.cachix.org` without upload credentials.
+  Images run 38181091160 built both architectures and uploaded image/cache
+  closures successfully.
+
+## CI qualification gates and dependency graph
+
+- [x] Scope and architecture: full native checks for every PR/merge group;
+  descriptive change qualifiers; explicit software/image gates; physical gates
+  remain open. Great CTO infrastructure specialist reviewed the gate design.
+- [x] Implementation: machine-readable dependency policy, actual-workflow
+  validation, fail-closed prerequisite guards and qualification evidence.
+- [x] Independent code/security review approved; 20 lightweight helper tests
+  pass under the bounded nix develop shell, including gate and artifact failures.
+  Qualification tests also pass against read-only source fixtures. Metadata and
+  maintenance-update jobs do not claim native validation snapshot keys.
+- [x] Active merge rules and queue admission require Software qualification
+  alongside both unchanged native contexts. Prior run 38182728905 passed both
+  native jobs and aggregate qualification; final snapshot changes repeat CI.
+- [ ] Native GitHub checks and merge-group delivery.

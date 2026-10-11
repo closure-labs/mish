@@ -23,7 +23,8 @@
         "strict_required_status_checks_policy": false,
         "required_status_checks": [
           {"context": "checks (ubuntu-24.04, x86_64-linux)", "integration_id": 15368},
-          {"context": "checks (ubuntu-24.04-arm, aarch64-linux)", "integration_id": 15368}
+          {"context": "checks (ubuntu-24.04-arm, aarch64-linux)", "integration_id": 15368},
+          {"context": "Software qualification", "integration_id": 15368}
         ]
       }
     },
