@@ -128,9 +128,9 @@ enum Waypoint {
     AddSimulated {
         #[arg(long)]
         id: Option<String>,
-        #[arg(long)]
+        #[arg(long, allow_negative_numbers = true)]
         lat: f64,
-        #[arg(long)]
+        #[arg(long, allow_negative_numbers = true)]
         lon: f64,
         #[arg(long)]
         label: Option<String>,
