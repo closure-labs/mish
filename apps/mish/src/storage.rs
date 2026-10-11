@@ -2,8 +2,8 @@
 use crate::{invalid, validation};
 use anyhow::Result;
 use base64::{Engine, engine::general_purpose::STANDARD};
-use hmac::{Hmac, Mac};
-use rand::{RngCore, rngs::OsRng};
+use hmac::{Hmac, KeyInit, Mac};
+use rand::{TryRng, rngs::SysRng};
 use serde_json::{Value, json};
 use sha2::{Digest, Sha256};
 use std::{
@@ -174,7 +174,7 @@ impl MishStore {
             return Ok(STANDARD.decode(fs::read_to_string(path)?.trim())?);
         }
         let mut key = vec![0; 32];
-        OsRng.fill_bytes(&mut key);
+        SysRng.try_fill_bytes(&mut key)?;
         match fs::OpenOptions::new()
             .write(true)
             .create_new(true)
@@ -362,7 +362,7 @@ impl MishStore {
             return Ok((read_json(&path)?, false));
         }
         let mut token = [0; 32];
-        OsRng.fill_bytes(&mut token);
+        SysRng.try_fill_bytes(&mut token)?;
         let value = json!({"version":"0.1","identity":"operator","createdAt":utc_now(),"enrollmentToken":base64::engine::general_purpose::URL_SAFE_NO_PAD.encode(token),"mfaRequired":self.config["openziti"]["privilegedMfaRequired"].as_bool().unwrap_or(true),"policies":["privileged-admin","service-dial","operator-bootstrap"]});
         atomic_json(&path, &value)?;
         Ok((value, true))
@@ -402,5 +402,29 @@ async fn probe(url: &str) -> Value {
     match result {
         Ok(response) => json!({"ok":true,"status":"reachable","response":response}),
         Err(error) => json!({"ok":false,"status":"unreachable","error":error.to_string()}),
+    }
+}
+
+#[cfg(test)]
+mod compatibility_tests {
+    use super::*;
+
+    #[test]
+    fn persisted_geopack_key_preserves_signature_bytes() {
+        let state = tempfile::tempdir().unwrap();
+        let store = MishStore::new(state.path(), default_config(Some(state.path()))).unwrap();
+        fs::write(
+            state.path().join("keys/geopack-signing.key"),
+            "AAECAwQFBgcICQoLDA0ODxAREhMUFRYXGBkaGxwdHh8=\n",
+        )
+        .unwrap();
+        // Independent Python stdlib HMAC fixture: key bytes 0..31, JSON {"name":"Fixture"}.
+        let signed = store
+            .sign(json!({"name":"Fixture", "signature":"replaced"}))
+            .unwrap();
+        assert_eq!(
+            signed["signature"],
+            "hmac-sha256:fb000a9eed121004eda305c62ae07901451cd98b4f706d442747f97e4e67df36"
+        );
     }
 }
