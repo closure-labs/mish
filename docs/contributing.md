@@ -5,6 +5,22 @@ explain the concrete user behavior, validation performed and material remaining
 limits. Keep simulated transport, built artifacts, VM behavior and physical
 qualification separate in reports.
 
+The [public binary cache](binary-cache.md) shares exact package, check and
+developer-shell outputs. Use --accept-flake-config when accepting its signed
+substituter. PRs read the cache; trusted main and release jobs upload.
+
+On the workstation, serialize Nix evaluation/builds with the bounded wrapper:
+
+    bash scripts/local-nix.sh build .#checks.x86_64-linux.workflows --accept-flake-config
+
+The launcher enters nix develop inside its scope, shares one lock across worktrees,
+permits one Nix build job and
+one build core, and bounds the evaluator/client to 2 GiB with swap disabled.
+Nix daemon builds run outside that user scope. Run full VM/image and
+all-architecture gates on GitHub runners when workstation memory is tight;
+do not start concurrent local checks. Set CARGO_BUILD_JOBS=1 for direct Cargo
+commands. Shell startup is included in the lock and memory limit.
+
 ```bash
 nix develop --command cargo fmt --manifest-path apps/mish/Cargo.toml --all -- --check
 nix develop --command cargo clippy --manifest-path apps/mish/Cargo.toml --all-targets --locked -- -D warnings

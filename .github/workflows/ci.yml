@@ -7,6 +7,11 @@ on:
   push:
     branches: [main]
   workflow_dispatch:
+    inputs:
+      cold-cache:
+        description: Skip the GitHub store snapshot to verify signed Cachix restores
+        type: boolean
+        default: false
 permissions:
   contents: read
 concurrency:
@@ -26,11 +31,11 @@ jobs:
     timeout-minutes: 120
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
-      - uses: cachix/install-nix-action@13d8dd58da0234aa297dedd986986ccb8e7f3e24
-      - uses: nix-community/cache-nix-action@7df957e333c1e5da7721f60227dbba6d06080569
+      - uses: ./.github/actions/nix
         with:
-          primary-key: nix-${{ runner.os }}-${{ runner.arch }}-${{ hashFiles('flake.lock') }}
-          restore-prefixes-first-match: nix-${{ runner.os }}-${{ runner.arch }}-
+          public-key: ${{ vars.CACHIX_PUBKEY || 'mish.cachix.org-1:TVqZ5PamlcnYEpNEJtBz7xNmS7H5X/gXQXYVeDBD4FY=' }}
+          restore-store: ${{ inputs.cold-cache != true }}
+          token: ${{ github.event_name == 'push' && github.ref == 'refs/heads/main' && secrets.CACHIX_TOKEN || '' }}
       - name: Evaluate all supported systems and checks
         id: evaluation
         shell: bash
@@ -39,6 +44,11 @@ jobs:
         id: native
         shell: bash
         run: nix flake check -L --accept-flake-config 2>&1 | tee native-checks.log
+      - name: Realize validation evidence and cache roots
+        env:
+          SYSTEM: ${{ matrix.system }}
+          MISH_CACHE_UPLOAD: ${{ github.event_name == 'push' && github.ref == 'refs/heads/main' }}
+        run: nix develop --accept-flake-config --command bash .github/scripts/cache-outputs.sh
       - name: Record validation scope
         if: always()
         env:
@@ -56,6 +66,7 @@ jobs:
               printf '\nNative checks include the booted appliance VM and snapshot recovery scenario.\n'
             fi
             printf '\nImage realization and physical hardware acceptance are separate gates.\n'
+            printf 'Signed Cachix substitutes may reuse exact package and check derivations. See validation-manifest.json for output identities.\n'
           } >> "$GITHUB_STEP_SUMMARY"
       - name: Retain validation logs
         if: always()
@@ -65,5 +76,7 @@ jobs:
           path: |
             evaluation.log
             native-checks.log
+            artifacts/validation-*
+            artifacts/SHA256SUMS
           if-no-files-found: ignore
           retention-days: 14

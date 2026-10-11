@@ -14,6 +14,7 @@ target/
 # Nix/local build outputs
 result
 result-*
+artifacts/
 *.qcow2
 *.img
 *.img.zst

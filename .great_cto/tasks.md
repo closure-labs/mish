@@ -92,6 +92,25 @@ Physical M2–M5 gates remain open. This task does not publish or deploy a relea
   Final evidence-only revision repeats both required checks.
 - [x] Committed and pushed Rust implementation `a6e4fb8` with follow-up
   coordinate parsing and current-main merges; [PR #14](https://github.com/closure-labs/mish/pull/14).
-- [ ] Successful native checks and merge-queue delivery of final Rust revision.
+- [x] Successful native checks and merge-queue delivery of final Rust revision:
+  PR #14 merged as b0bc113 after both native merge-group checks passed.
 
 Physical hardware and field-pilot acceptance remain open.
+
+## Shared binary cache and validation outputs
+
+- [x] User-approved scope: use CACHIX_PUBKEY and CACHIX_TOKEN to share
+  Mish, other build outputs, native check evidence and the developer shell.
+- [x] Architecture: one signed public cache, trusted main/tag uploads,
+  token-free PR/merge-group reads, explicit roots plus newly built outputs.
+  Use identical local/CI Nix checks for validation reuse through nix develop.
+- [x] Runtime audit: all existing JavaScript action pins use Node 24;
+  new Cachix v17 uses Node 24. Full SHA pinning remains in effect.
+- [x] Independent security review approved after complete evidence checksums;
+  12 CI-helper tests pass, including read-only and failed-validation no-upload
+  regressions. All JavaScript action runtimes were verified from pinned metadata.
+- [x] Workstation resource constraint: stopped overlapping evaluations/builds.
+  Added one local lock, one Nix job/core, and a 2 GiB user scope that includes
+  shell startup. Full native/VM/image validation runs on GitHub runners.
+- [ ] GitHub native checks and queue delivery.
+- [ ] Main workflow upload and subsequent signed-cache reuse verified.
