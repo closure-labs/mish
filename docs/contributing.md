@@ -1,5 +1,8 @@
 # Contributing
 
+The [CI qualification policy](ci-qualification.md) documents required checks,
+change qualifiers, workflow dependencies and the separate physical gates.
+
 Use the committed lockfile and the same flake checks as CI. Changes should
 explain the concrete user behavior, validation performed and material remaining
 limits. Keep simulated transport, built artifacts, VM behavior and physical

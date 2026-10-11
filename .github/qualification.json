@@ -1,0 +1,24 @@
+{
+  "version": 1,
+  "workflows": {
+    "ci.yml": {"qualify": [], "checks": ["qualify"], "qualified": ["qualify", "checks"]},
+    "images.yml": {"qualify": [], "images": ["qualify"], "qualified": ["qualify", "images"]},
+    "release.yml": {"qualify": [], "images": ["qualify"], "draft": ["qualify", "images"]},
+    "maintenance.yml": {"update": [], "checks": ["update"], "pull-request": ["checks"]}
+  },
+  "milestones": {
+    "M0": [], "M1": ["M0"], "M2": ["M1"],
+    "M3": ["M1", "M2"], "M4": ["M3"], "M5": ["M3", "M4"]
+  },
+  "components": {
+    "runtime": ["apps/"],
+    "appliance": ["hosts/", "modules/", "nix/", "pkgs/"],
+    "contracts": ["schemas/", "examples/", "catalog/"],
+    "validation": ["tests/", "scripts/", ".github/"],
+    "documentation": ["docs/", "README.md", ".great_cto/"]
+  },
+  "required_checks": [
+    "checks (ubuntu-24.04, x86_64-linux)",
+    "checks (ubuntu-24.04-arm, aarch64-linux)"
+  ]
+}

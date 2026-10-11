@@ -154,7 +154,7 @@ in
           pkgs.pkg-config
           pkgs.sqlite
           pkgs.cachix
-          pkgs.python3
+          (pkgs.python3.withPackages (ps: [ ps.pyyaml ]))
         ];
         env.PKG_CONFIG_PATH = "${pkgs.sqlite.dev}/lib/pkgconfig";
       };
@@ -369,7 +369,7 @@ in
             pkgs.runCommand "mish-cli-check"
               {
                 nativeBuildInputs = [
-                  pkgs.python3
+                  (pkgs.python3.withPackages (ps: [ ps.pyyaml ]))
                   pkgs.mish-control
                 ];
               }
@@ -400,6 +400,7 @@ in
                 mish --state-dir "$MISH_STATE_DIR" identity bootstrap-operator > "$TMPDIR/operator.json"
                 export MISH_CATALOG_PATH=${../catalog/mish-catalog.json}
                 export MISH_QUEUE_SCRIPT_PATH=${../.github/scripts/queue_prs.py}
+                export MISH_CI_ROOT=${../.}
                 export MISH_CACHE_SCRIPT_PATH=${../.github/scripts/cache-outputs.sh}
                 python3 -m unittest discover -s ${../tests} -p 'test_*.py'
                 touch "$out"
@@ -469,7 +470,7 @@ in
             pkgs.runCommand "mish-cli-check"
               {
                 nativeBuildInputs = [
-                  pkgs.python3
+                  (pkgs.python3.withPackages (ps: [ ps.pyyaml ]))
                   pkgs.mish-control
                 ];
               }
@@ -500,6 +501,7 @@ in
                 mish --state-dir "$MISH_STATE_DIR" identity bootstrap-operator > "$TMPDIR/operator.json"
                 export MISH_CATALOG_PATH=${../catalog/mish-catalog.json}
                 export MISH_QUEUE_SCRIPT_PATH=${../.github/scripts/queue_prs.py}
+                export MISH_CI_ROOT=${../.}
                 export MISH_CACHE_SCRIPT_PATH=${../.github/scripts/cache-outputs.sh}
                 python3 -m unittest discover -s ${../tests} -p 'test_*.py'
                 touch "$out"
