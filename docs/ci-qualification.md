@@ -43,6 +43,10 @@ Before draft creation, a separate integrity gate verifies both downloaded image
 artifacts, complete checksums, architecture, source revision and committed
 lockfile. It rejects corrupt, incomplete or mismatched artifacts.
 
+Main also requires the `Software qualification` aggregate context from GitHub
+Actions. The queue-admission policy requires its successful current-head result
+alongside both native jobs, so aggregate qualification cannot be bypassed.
+
 M0 → M1 → M2, then M3 depends on both M1 and M2; M4 depends on M3; M5 depends
 on M3 and M4. These dependencies follow the [roadmap](roadmap.md). CI produces
 software evidence only. It does not approve a physical gate or publish a release.

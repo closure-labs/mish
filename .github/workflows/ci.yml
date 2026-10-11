@@ -105,6 +105,7 @@ jobs:
           if-no-files-found: ignore
           retention-days: 14
   qualified:
+    name: Software qualification
     needs: [qualify, checks]
     if: always()
     runs-on: ubuntu-24.04

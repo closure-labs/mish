@@ -74,6 +74,7 @@ jobs:
           path: artifacts/
           retention-days: 14
   qualified:
+    name: Image qualification
     needs: [qualify, images]
     if: always()
     runs-on: ubuntu-24.04

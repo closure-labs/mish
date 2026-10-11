@@ -79,6 +79,8 @@ def validate_policy(root):
                     raise ValueError(f'{filename}: native/image/integrity gates missing or reordered')
         if filename in ('ci.yml', 'images.yml'):
             final = workflow['jobs']['qualified']
+            if final.get('name') != ('Software qualification' if filename == 'ci.yml' else 'Image qualification'):
+                raise ValueError(f'{filename}: aggregate context identity differs from policy')
             if final.get('if') != 'always()':
                 raise ValueError(f'{filename}: aggregate gate must always report')
             last = final['steps'][-1]
@@ -92,7 +94,7 @@ def validate_policy(root):
     checks = ci['jobs']['checks']
     contexts = {f'checks ({entry["runner"]}, {entry["system"]})'
                 for entry in checks['strategy']['matrix']['include']}
-    if contexts != set(policy['required_checks']):
+    if contexts | {'Software qualification'} != set(policy['required_checks']):
         raise ValueError('native matrix no longer matches required check names')
     if 'name' in checks or 'continue-on-error' in checks:
         raise ValueError('native checks cannot rename or tolerate errors')
