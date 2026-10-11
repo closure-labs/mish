@@ -43,10 +43,16 @@ Resolve conflicts locally and rerun affected checks before requesting review.
 A normal Git branch/PR workflow is also supported.
 
 CI checks on PRs have read-only permissions and no secrets. Image automation
-builds pinned revisions and publishes checksums/manifests. Maintenance runs explicit native x86 and ARM checks before proposing
-reviewed lockfile updates and never auto-merges. PRs created with `GITHUB_TOKEN`
-do not automatically trigger PR checks; dispatch `ci.yml` manually on the
-maintenance branch to produce the required CI evidence for branch protection. Version tags create draft
-releases; hardware evidence is required before publishing them. Configure
-repository branch protection to require CI after the workflows are first run;
-workflow YAML alone cannot set repository merge policy.
+builds pinned revisions and publishes checksums/manifests. Maintenance runs
+explicit native x86 and ARM checks before proposing a draft lockfile update.
+Review its inputs before marking it ready; that action triggers required PR
+Checks. Checks created by `GITHUB_TOKEN` may need workflow approval.
+
+Main now requires both native Checks jobs and merge-queue validation. The
+[automatic queue workflow](merge-queue.md) admits ready PRs from repository
+branches after successful current-head Checks; draft maintenance proposals
+remain pending operator review. Queue admission uses trusted main code and
+keeps PR checks read-only. Version tags create draft releases; hardware
+evidence is required before publication. Workflow YAML alone does not set
+repository merge policy: the active ruleset configuration is also recorded
+in `.github/merge-queue-rules.json`.

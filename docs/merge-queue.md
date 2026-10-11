@@ -12,6 +12,8 @@ including Dependabot, only after both current-head native jobs pass. Stale
 heads, conflicts, missing/failed checks and required-review blockers wait.
 External fork admission remains an explicit maintainer action. Turning a
 draft into a ready PR triggers Checks again.
+Maintenance input updates are created as drafts so the operator reviews them
+before marking them ready for Checks and automatic queue admission.
 
 Enqueue uses the expected PR head SHA so a new push cannot silently substitute
 untested content. The workflow never checks out PR code or downloads PR
