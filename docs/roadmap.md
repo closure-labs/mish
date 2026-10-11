@@ -53,6 +53,9 @@ with the source revision, command, environment and result.
 4. Use stable `/dev/serial/by-id` radio paths, explicit serial permissions and
    reconnect backoff. Receive records do not automatically re-enter the outbox.
    Ambiguous transmission remains uncertain rather than claiming success.
+   Snapshot restores quarantine pending sends: a backup cannot establish
+   whether the original coordinator transmitted them after capture. Ordinary
+   restarts retain their genuine pending queue.
 5. Retain existing CLI/module names. Keep simulation clearly labelled and
    opt-in. Defer Matrix, OpenZiti, Nostr expansion, GeoPack expansion, Reticulum
    messaging and additional board qualification.

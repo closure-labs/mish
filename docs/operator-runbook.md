@@ -73,6 +73,10 @@ SQLite backups, CA/config backups, restore and generation rollback. A software
 rollback does not roll back event data. Before swapping databases, stop the
 application and preserve the existing state; check credentials, journal, public
 projection, ACK history and radio operation before accepting traffic.
+Use `vfctl restore --input <backup>` into fresh state rather than replacing a
+database by hand. Snapshot queue entries become uncertain because they may
+have been transmitted after backup capture; review them before creating any
+replacement. Normal service restarts preserve the current pending queue.
 
 Retention defaults to seven days and runs hourly; privileged `prune` applies
 it immediately. Export the required event records before an explicit wipe.

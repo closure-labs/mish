@@ -50,5 +50,36 @@ pkgs.testers.nixosTest {
     restored_alert = next(item for item in messages["messages"] if item["id"] == alert["id"])
     assert any(ack["actor"] == staff["id"] for ack in restored_alert["acknowledgements"])
     assert "Private restart test" not in machine.succeed("curl --fail --silent http://127.0.0.1:8787/public/announcements")
+
+    announcement = request("POST", "/api/announcements", {"text": "Water station open"})
+    machine.succeed("systemctl stop vestaforge-control.service")
+    snapshot_queued = json.loads(machine.succeed("runuser -u vestaforge -- vfctl --state-dir /var/lib/vestaforge message --author 'Operator' --text 'Queued at snapshot time'"))
+    machine.succeed("runuser -u vestaforge -- vfctl --state-dir /var/lib/vestaforge backup --output /tmp/event-backup.sqlite")
+    machine.succeed("systemctl start vestaforge-control.service")
+    machine.wait_for_open_port(8787)
+    machine.wait_until_succeeds("curl --fail --silent -H 'Authorization: Bearer " + token + "' http://127.0.0.1:8787/api/messages | jq -e '.messages[] | select(.id == \"" + snapshot_queued["id"] + "\") | .state == \"submitted\"'")
+    machine.succeed("systemctl stop vestaforge-control.service")
+    machine.succeed("mv /var/lib/vestaforge /var/lib/vestaforge-before-restore")
+    machine.succeed("install -d -m 0700 -o vestaforge -g vestaforge /var/lib/vestaforge")
+    recovery = json.loads(machine.succeed("runuser -u vestaforge -- vfctl --state-dir /var/lib/vestaforge restore --input /tmp/event-backup.sqlite"))
+    assert recovery["quarantined"] >= 1
+    machine.fail("runuser -u vestaforge -- vfctl --state-dir /var/lib/vestaforge restore --input /tmp/event-backup.sqlite")
+    machine.succeed("systemctl start vestaforge-control.service")
+    machine.wait_for_open_port(8787)
+    recovered = request("GET", "/api/messages", bearer=staff["token"])["messages"]
+    snapshot_record = next(item for item in recovered if item["id"] == snapshot_queued["id"])
+    assert snapshot_record["state"] == "uncertain"
+    assert snapshot_record["delivery"]["uncertainAt"] is not None
+    recovered_alert = next(item for item in recovered if item["id"] == alert["id"])
+    assert any(ack["actor"] == staff["id"] for ack in recovered_alert["acknowledgements"])
+    public = json.loads(machine.succeed("curl --fail --silent http://127.0.0.1:8787/public/announcements"))
+    assert public["announcements"] == [announcement]
+    assert "Queued at snapshot time" not in json.dumps(public)
+    fresh = request("POST", "/api/messages", {"text": "New message after recovery"}, staff["token"])
+    machine.wait_until_succeeds("curl --fail --silent -H 'Authorization: Bearer " + token + "' http://127.0.0.1:8787/api/messages | jq -e '.messages[] | select(.id == \"" + fresh["id"] + "\") | .state == \"submitted\"'")
+    final_messages = request("GET", "/api/messages")["messages"]
+    assert next(item for item in final_messages if item["id"] == snapshot_queued["id"])["state"] == "uncertain"
+    machine.succeed("test -f /var/lib/vestaforge-before-restore/events.sqlite")
+    machine.succeed("curl --fail --silent --cacert /var/lib/caddy/.local/share/caddy/pki/authorities/local/root.crt --resolve mish.home.arpa:443:127.0.0.1 https://mish.home.arpa/health")
   '';
 }

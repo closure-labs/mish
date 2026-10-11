@@ -31,6 +31,37 @@ jobs:
           primary-key: nix-${{ runner.os }}-${{ runner.arch }}-${{ hashFiles('flake.lock') }}
           restore-prefixes-first-match: nix-${{ runner.os }}-${{ runner.arch }}-
       - name: Evaluate all supported systems and checks
-        run: nix flake check --all-systems --no-build --accept-flake-config
+        id: evaluation
+        shell: bash
+        run: nix flake check --all-systems --no-build --accept-flake-config 2>&1 | tee evaluation.log
       - name: Native package and checks (x86 includes VM application test)
-        run: nix flake check --accept-flake-config
+        id: native
+        shell: bash
+        run: nix flake check -L --accept-flake-config 2>&1 | tee native-checks.log
+      - name: Record validation scope
+        if: always()
+        env:
+          SYSTEM: ${{ matrix.system }}
+          SOURCE_REVISION: ${{ github.sha }}
+          EVALUATION_RESULT: ${{ steps.evaluation.outcome }}
+          NATIVE_RESULT: ${{ steps.native.outcome }}
+        run: |
+          {
+            printf 'Source: %s\n\nArchitecture: %s\n\n' "$SOURCE_REVISION" "$SYSTEM"
+            printf '| Validation | Result |\n|---|---|\n'
+            printf '| All-system evaluation | %s |\n| Native package and checks | %s |\n' "$EVALUATION_RESULT" "$NATIVE_RESULT"
+            if [ "$SYSTEM" = x86_64-linux ]; then
+              printf '\nNative checks include the booted appliance VM and snapshot recovery scenario.\n'
+            fi
+            printf '\nImage realization and physical hardware acceptance are separate gates.\n'
+          } >> "$GITHUB_STEP_SUMMARY"
+      - name: Retain validation logs
+        if: always()
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9
+        with:
+          name: checks-${{ matrix.system }}-${{ github.sha }}-${{ github.run_attempt }}
+          path: |
+            evaluation.log
+            native-checks.log
+          if-no-files-found: ignore
+          retention-days: 14

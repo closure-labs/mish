@@ -23,6 +23,8 @@ Record command, architecture and pass/fail result separately for:
 - [ ] Traversal, malformed/oversized requests, unauthorized private reads and writes rejected.
 - [ ] Private messages, identities, positions and unpublished alerts absent from public responses.
 - [ ] Queued messages and acknowledgement history survive service restart.
+- [ ] Snapshot recovery preserves credentials, published feed and browser/radio ACKs; restored pending sends remain uncertain and never replay automatically.
+- [ ] Corrupt/incompatible backups and existing restore targets are rejected without overwriting state.
 - [ ] Duplicate packets, disconnects, uncertain sends, expired alerts and exhausted queues do not report false success.
 
 ## Physical commissioning
@@ -45,6 +47,7 @@ Record command, architecture and pass/fail result separately for:
 - [ ] Restart application and reboot appliance; history and queues persist.
 - [ ] Interrupt power after durable acceptance; accepted records survive.
 - [ ] Restore a backup onto a spare; verify messages, publication and acknowledgement history.
+- [ ] Review quarantined snapshot sends and demonstrate new messages transmit after recovery.
 - [ ] Roll back a software generation; verify runtime/database compatibility.
 - [ ] Stop coordinator; two staff radios still communicate directly.
 - [ ] Verify expired alerts and bounded queues under actual radio congestion.
