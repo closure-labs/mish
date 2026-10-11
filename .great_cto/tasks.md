@@ -33,6 +33,14 @@ Beads is unavailable in this environment; this file records phase tasks.
   review-blocked PRs wait. Dispatch queue CI only when its run is absent.
 - [x] Independent security review: approved after adding fork rejection.
 - [x] Local QA: five queue-policy tests; full suite now totals 43 tests.
-- [ ] GitHub QA and automatic admission evidence for the workflow revision.
+- [x] GitHub QA: both native jobs passed for `67c3347` in
+  [run 38173427998](https://github.com/closure-labs/mish/actions/runs/38173427998).
+  Both merge-group jobs passed in
+  [run 38173802058](https://github.com/closure-labs/mish/actions/runs/38173802058);
+  [PR #8](https://github.com/closure-labs/mish/pull/8) merged as `fb6db84`.
+
+End-to-end automatic admission is exercised by the verification-record PR,
+intentionally opened without manual queue enrollment. Its Actions and PR
+timeline record whether the installed workflow admits the validated head.
 
 Physical M2–M5 gates remain open. This task does not publish or deploy a release.
