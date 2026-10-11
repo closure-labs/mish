@@ -6,11 +6,12 @@ limits. Keep simulated transport, built artifacts, VM behavior and physical
 qualification separate in reports.
 
 ```bash
-nix develop
-PYTHONPATH=apps/mish/src python -m unittest discover -s tests
-nix run .# -- internal-check-schemas --schemas schemas --examples examples --catalog catalog/mish-catalog.json
-nix flake check --no-build --all-systems
-nix flake check
+nix develop --command cargo fmt --manifest-path apps/mish/Cargo.toml --all -- --check
+nix develop --command cargo clippy --manifest-path apps/mish/Cargo.toml --all-targets --locked -- -D warnings
+nix develop --command cargo test --manifest-path apps/mish/Cargo.toml --all-targets --locked
+nix develop --command mish internal-check-schemas --schemas schemas --examples examples --catalog catalog/mish-catalog.json
+nix develop --command nix flake check --no-build --all-systems
+nix develop --command nix flake check
 ```
 
 On Linux, `nix flake check` builds native checks; the x86 VM integration check
@@ -18,8 +19,19 @@ requires virtualization support. ARM packages and SD images use an ARM runner
 or builder. A non-Linux development host can evaluate all systems, then use
 native Linux builders to realize outputs. See [building-alpha.md](building-alpha.md).
 Format Nix files with `nix fmt`; CI runs the formatter in check mode and must
-never rewrite contributions. Add meaningful regressions for authorization,
-privacy, durability and transport state changes.
+never rewrite contributions. `apps/mish/Cargo.lock` pins the Rust dependencies;
+Nix packages the application with `buildRustPackage` and runs formatting,
+Clippy and Cargo tests before accepting the package. Add meaningful regressions
+for authorization, privacy, durability and transport state changes. The
+[Rust architecture decision](rust-architecture.md) describes the typed domain,
+bounded coordinator and native serial adapter.
+
+Python is retained for repository CI automation tests, not the appliance
+runtime. Test that helper separately when changing queue automation:
+
+```bash
+nix develop --command python -m unittest discover -s tests -p test_merge_queue.py
+```
 
 ## jj and GitHub PRs
 

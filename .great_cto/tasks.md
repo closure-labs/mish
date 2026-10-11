@@ -46,6 +46,13 @@ admitted its validated head and explicitly dispatched
 [queue Checks run 38174603025](https://github.com/closure-labs/mish/actions/runs/38174603025)
 for the combined commit.
 
+That dispatched run passed, but its check suite was not associated with the
+queue commit's GraphQL status rollup, so it did not complete the queue gate.
+The durable correction is [PR #13](https://github.com/closure-labs/mish/pull/13):
+repository-scoped GitHub App authentication and native `merge_group` events.
+App registration/installation and the documented Actions variable/secret are
+an outstanding configuration dependency; no personal token is stored in CI.
+
 Physical M2–M5 gates remain open. This task does not publish or deploy a release.
 
 ## Mish rebrand
@@ -61,3 +68,21 @@ Physical M2–M5 gates remain open. This task does not publish or deploy a relea
 - [x] Local QA: all 43 Python tests, all-system evaluation and native x86 checks
   passed, including the booted Mish VM and snapshot-recovery scenario.
 - [ ] GitHub QA and automatic queue delivery of the reviewed revision.
+
+## Rust-native coordinator
+
+- [x] User-approved scope and Codex Overkill comparison:
+  `docs/rust-architecture.md`; one coordinator remains authoritative.
+- [x] Implementation: validated domain types, bounded typed command mailbox,
+  dedicated SQLite thread, Axum/Clap adapters and native USB serial framing.
+  The appliance package contains no Python runtime.
+- [x] Preserve commissioning, staff tokens, alerts/ACKs, private/public
+  projections, legacy opt-in content commands and snapshot no-replay recovery.
+- [x] Independent security review: no P0/P1 blockers. Corrected browser request
+  payloads, SIGTERM lifecycle and journal polling N+1 queries.
+- [x] Cargo behavioral tests and strict Clippy pass; all-system Nix evaluation
+  passes. Final realized package/VM and GitHub checks follow the frozen revision.
+- [ ] Native package/VM and native ARM GitHub validation of final revision.
+- [ ] Commit, push and merge-queue delivery of reviewed Rust package.
+
+Physical hardware and field-pilot acceptance remain open.

@@ -133,16 +133,21 @@ in
     in
     {
       default = pkgs.mkShell {
+        inputsFrom = [ pkgs.mish-control ];
         packages = [
           pkgs.git
           pkgs.gh
           pkgs.nix
           pkgs.nixfmt
-          (pkgs.python3.withPackages (
-            ps: [ ps.aiohttp ] ++ lib.optionals pkgs.stdenv.hostPlatform.isLinux [ ps.meshtastic ]
-          ))
-          pkgs.mish-control
+          pkgs.cargo
+          pkgs.rustc
+          pkgs.rustfmt
+          pkgs.clippy
+          pkgs.pkg-config
+          pkgs.sqlite
+          pkgs.python3
         ];
+        env.PKG_CONFIG_PATH = "${pkgs.sqlite.dev}/lib/pkgconfig";
       };
     }
   );
@@ -355,7 +360,7 @@ in
             pkgs.runCommand "mish-cli-check"
               {
                 nativeBuildInputs = [
-                  (pkgs.python3.withPackages (ps: [ ps.aiohttp ]))
+                  pkgs.python3
                   pkgs.mish-control
                 ];
               }
@@ -386,7 +391,7 @@ in
                 mish --state-dir "$MISH_STATE_DIR" identity bootstrap-operator > "$TMPDIR/operator.json"
                 export MISH_CATALOG_PATH=${../catalog/mish-catalog.json}
                 export MISH_QUEUE_SCRIPT_PATH=${../.github/scripts/queue_prs.py}
-                PYTHONPATH=${../apps/mish/src} python3 -m unittest discover -s ${../tests}
+                python3 -m unittest discover -s ${../tests} -p test_merge_queue.py
                 touch "$out"
               '';
 
@@ -454,7 +459,7 @@ in
             pkgs.runCommand "mish-cli-check"
               {
                 nativeBuildInputs = [
-                  (pkgs.python3.withPackages (ps: [ ps.aiohttp ]))
+                  pkgs.python3
                   pkgs.mish-control
                 ];
               }
@@ -485,7 +490,7 @@ in
                 mish --state-dir "$MISH_STATE_DIR" identity bootstrap-operator > "$TMPDIR/operator.json"
                 export MISH_CATALOG_PATH=${../catalog/mish-catalog.json}
                 export MISH_QUEUE_SCRIPT_PATH=${../.github/scripts/queue_prs.py}
-                PYTHONPATH=${../apps/mish/src} python3 -m unittest discover -s ${../tests}
+                python3 -m unittest discover -s ${../tests} -p test_merge_queue.py
                 touch "$out"
               '';
         };

@@ -1,5 +1,19 @@
 # Implementation verification evidence
 
+The sections below record historical revisions, including the earlier Python
+runtime. Their Python commands and counts are evidence for those revisions,
+not current contributor instructions. The current runtime is Rust; use
+[contributing.md](contributing.md) for its checks.
+
+## Rust runtime continuation
+
+The Rust implementation has compiled and its 35 tests passed locally. It uses
+Axum, Clap, a bounded Tokio coordinator, SQLite and native Meshtastic serial
+framing; the appliance runtime contains no Python application package.
+Port-specific Nix package, booted VM, image and GitHub results remain pending
+until recorded against the Rust revision. Physical qualification remains
+unperformed.
+
 These results concern the implementation working tree on 2026-10-11. Release
 automation must repeat checks against its tagged revision and record artifact
 checksums. Physical acceptance remains separate.

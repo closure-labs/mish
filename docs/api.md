@@ -5,6 +5,12 @@ default, with Caddy exposing local HTTPS on the appliance. Use
 `https://mish.home.arpa` after [commissioning](commissioning.md), including trust
 of the event's local certificate authority.
 
+The Rust service implements HTTP with Axum and the owner CLI with Clap. A
+bounded Tokio coordinator sends storage commands to a dedicated SQLite thread;
+accepted writes return after transaction commit. The wire routes and CLI names
+remain the event application's existing contract. See
+[rust-architecture.md](rust-architecture.md) for implementation boundaries.
+
 Send `Authorization: Bearer <token>` for authenticated operations. Staff tokens
 permit private event reads and staff writes. Operator tokens also permit
 enrollment, revocation and publication. Enrollment returns a token once;
@@ -28,10 +34,12 @@ be revoked until another operator is enrolled.
 | `DELETE /api/staff/{id}` | Operator | Revoke the identity's token |
 | `POST /api/announcements` | Operator | `text`; creates a separate public announcement |
 
-Requests containing JSON must be objects with `Content-Type: application/json`.
+Requests containing JSON must be objects with `Content-Type: application/json`;
+typed event requests reject unknown fields.
 The body limit is 16 KiB. Messages and alert text are nonempty and limited to
 160 UTF-8 bytes. Alert expiration is a Unix epoch timestamp within the next
 24 hours. The browser currently uses a one-hour expiration.
+Staff names are limited to 80 UTF-8 bytes and announcements to 4,000 UTF-8 bytes.
 
 For example, an authenticated message request body is:
 
@@ -42,8 +50,9 @@ For example, an authenticated message request body is:
 Successful creation returns HTTP 201 after durable acceptance. Invalid input
 returns 400, absent or invalid credentials return 401, and a staff credential
 used for an operator action returns 403. A full outbound queue rejects new
-acceptance rather than claiming success. The attendee routes have no write
-operation.
+acceptance rather than claiming success. Oversized bodies return 413;
+unavailable coordinator/storage operations return 503 without claiming
+acceptance. The attendee routes have no write operation.
 
 ## Delivery and privacy
 

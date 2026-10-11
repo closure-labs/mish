@@ -78,14 +78,21 @@ committed `flake.lock` define the supported appliance build. See the
 
 The CLI is `mish`, the NixOS module is `services.mish`, and runtime state
 defaults to `/var/lib/mish`. Filesystem access to that state is administrative
-access. The bundled browser app uses a local SQLite journal; Caddy provides
-local HTTPS.
+access. The Rust service uses Axum for HTTP, Clap for the CLI and a bounded
+Tokio coordinator connected to a dedicated SQLite storage thread. Browser
+assets ship with the binary, and native serial I/O handles the Meshtastic
+adapter. Caddy provides local HTTPS. See the
+[Rust architecture decision](docs/rust-architecture.md) for the typed domain and
+delivery-state boundaries.
 
 ## Readiness and scope
 
 Native x86 and ARM checks, image realization and booted x86 VM application tests
-have passed for the revisions recorded in the
-[verification log](docs/verification.md). Physical installation, USB/RF
+passed for the earlier revisions recorded in the
+[verification log](docs/verification.md). The Rust runtime has compiled and its
+35-test suite has passed; Rust package, appliance VM and image checks are
+separate gates whose results must be recorded against the port revision.
+Physical installation, USB/RF
 interoperability, Pi 4 commissioning and an eight-hour event rehearsal remain
 unverified. This is a prototype for qualification, with draft releases gated
 on physical acceptance.
