@@ -55,6 +55,7 @@ jobs:
         uses: peter-evans/create-pull-request@5f6978faf089d4d20b00c7766989d076bb2fc7f1
         with:
           branch: maintenance/flake-inputs
+          draft: true
           commit-message: 'chore: update pinned flake inputs'
           title: 'chore: update pinned flake inputs'
-          body: 'Both native x86 and ARM checks, plus all-system evaluation, ran explicitly against this lockfile before opening the PR. Manually dispatch CI on this branch if required status checks are absent; GITHUB_TOKEN PR creation does not trigger PR workflows. Review and physical qualification remain required; never auto-merge.'
+          body: 'Both native x86 and ARM checks, plus all-system evaluation, ran explicitly against this lockfile before opening this draft. Review the input changes, then mark ready to trigger required PR Checks and queue admission. GITHUB_TOKEN-created PR checks may require workflow approval. Physical qualification remains required.'

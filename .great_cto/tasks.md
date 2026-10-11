@@ -16,7 +16,23 @@ Beads is unavailable in this environment; this file records phase tasks.
   shared with restore validation.
 - [x] Local QA: 38 Python tests, all-system evaluation, native x86 checks and
   booted VM snapshot recovery passed. Workflow actionlint/shellcheck passed.
-- [ ] GitHub QA: native x86 and ARM results for the PR revision.
-- [ ] Delivery: commit, push and reviewable GitHub PR with validation evidence.
+- [x] GitHub QA: native x86 and ARM Checks passed for `c91498b` in
+  [run 38172407182](https://github.com/closure-labs/mish/actions/runs/38172407182).
+- [x] Delivery: committed, pushed and opened
+  [PR #7](https://github.com/closure-labs/mish/pull/7); merge-queue validation
+  follows the repository's required checks.
+
+## Automatic PR queue admission
+
+- [x] Inspect effective rules: API reported no branch protection, rulesets or
+  merge queue for main. Applied the versioned `.github/merge-queue-rules.json`
+  as active ruleset `24893052`, requiring both native Checks and ALLGREEN queue
+  validation with one concurrent group and no bypass actors.
+- [x] Implementation: trusted-main workflow and expected-head queue API;
+  same-repository branches only; failed, missing, stale, draft, conflicting or
+  review-blocked PRs wait. Dispatch queue CI only when its run is absent.
+- [x] Independent security review: approved after adding fork rejection.
+- [x] Local QA: five queue-policy tests; full suite now totals 43 tests.
+- [ ] GitHub QA and automatic admission evidence for the workflow revision.
 
 Physical M2–M5 gates remain open. This task does not publish or deploy a release.

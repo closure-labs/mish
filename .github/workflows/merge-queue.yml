@@ -1,0 +1,34 @@
+name: Merge queue
+on:
+  workflow_run:
+    workflows: [Checks]
+    types: [completed]
+  workflow_dispatch:
+permissions:
+  contents: read
+concurrency:
+  group: merge-queue-main
+  cancel-in-progress: false
+jobs:
+  enqueue:
+    if: >-
+      github.event_name == 'workflow_dispatch' ||
+      (github.event.workflow_run.conclusion == 'success' &&
+       github.event.workflow_run.event == 'pull_request')
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    permissions:
+      contents: write
+      pull-requests: write
+      actions: write
+    steps:
+      - name: Check out trusted queue automation
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          ref: main
+          persist-credentials: false
+      - uses: cachix/install-nix-action@56a7bb7b56d9a92d4fd1bc05758de7eea4a370a8
+      - name: Queue current validated PR heads
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: nix develop --accept-flake-config --command python .github/scripts/queue_prs.py

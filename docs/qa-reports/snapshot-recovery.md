@@ -28,6 +28,7 @@ quarantined count are recorded in `recovery_history` and CLI output.
 | Booted appliance recovery | Passed | `tests/appliance.nix`: backup, original send, fresh restore, no replay, staff auth/ACK/public history, new sends and trusted HTTPS |
 | Independent security review | Approved | Ordered schema metadata and uniqueness checks resolved the compatibility finding |
 | Independent QA review | Passed | Revised recovery regressions passed; no remaining blocking findings |
+| Native GitHub x86 and ARM checks | Passed on `c91498b` | [Checks run 38172407182](https://github.com/closure-labs/mish/actions/runs/38172407182) |
 
 Eight recovery tests cover private/public history, browser/radio ACK
 provenance, source preservation, permissions, repeated recovery history,
@@ -47,7 +48,6 @@ and a private state directory. Stop the service and preserve the old state
 before restoring. Keep one coordinator active. It restores only records in
 the snapshot and requires separate configuration/CA/radio-key recovery.
 
-Native ARM CI must validate this revision independently. Updated image builds
-and physical M2–M5 acceptance remain separate. No release was published and no
+Updated image builds and physical M2–M5 acceptance remain separate. No release was published and no
 physical commissioning, USB/RF, power-loss or eight-hour rehearsal result is
 claimed by this software gate.
