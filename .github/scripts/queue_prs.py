@@ -12,7 +12,7 @@ CHECKS = {'checks (ubuntu-24.04, x86_64-linux)',
           'checks (ubuntu-24.04-arm, aarch64-linux)'}
 DETAILS = '''query($owner:String!,$repo:String!,$number:Int!) {
   repository(owner:$owner,name:$repo) { pullRequest(number:$number) {
-    id headRefOid isMergeQueueEnabled mergeQueueEntry { id headCommit { oid } }
+    id headRefOid isMergeQueueEnabled mergeQueueEntry { id position headCommit { oid } }
   } }
 }'''
 ENQUEUE = '''mutation($id:ID!,$head:GitObjectID!) {
@@ -50,32 +50,36 @@ def eligible(pr, queue, repository):
         for check in checks)
 
 
-def ensure_queue_checks(repository, number):
-    """GITHUB_TOKEN events can suppress CI; dispatch only if queue CI is absent."""
-    for _ in range(10):
+def validate_app_configuration(environment):
+    app_id = environment.get('MISH_QUEUE_APP_ID', '')
+    if not app_id.isdecimal() or int(app_id) <= 0 or not environment.get('MISH_QUEUE_APP_PRIVATE_KEY', '').strip():
+        raise RuntimeError('Configure MISH_QUEUE_APP_ID repository variable and MISH_QUEUE_APP_PRIVATE_KEY secret; see docs/merge-queue.md')
+
+
+def ensure_native_queue_checks(repository, number):
+    """Observe GitHub's native merge_group run; never substitute a dispatch."""
+    for _ in range(20):
         entry = details(repository, number)['mergeQueueEntry']
         if entry is None:
             return  # Already merged or removed; do not re-enqueue it here.
+        if entry.get('position', 1) > 1:
+            print(f'PR #{number}: waiting for preceding queue entries')
+            return
         head = entry.get('headCommit')
         if head:
-            refs = gh('api', f'repos/{repository}/git/matching-refs/heads/gh-readonly-queue/main/')
-            matching = [ref['ref'][len('refs/heads/'):] for ref in refs if ref['object']['sha'] == head['oid']]
-            if matching:
-                runs = gh('api', f'repos/{repository}/actions/workflows/ci.yml/runs?head_sha={head["oid"]}&per_page=100')
-                if any(run['event'] in ('merge_group', 'workflow_dispatch') for run in runs['workflow_runs']):
-                    return
-                # Give the native merge_group event time to create its run first.
-                time.sleep(3)
-                runs = gh('api', f'repos/{repository}/actions/workflows/ci.yml/runs?head_sha={head["oid"]}&per_page=100')
-                if not any(run['event'] in ('merge_group', 'workflow_dispatch') for run in runs['workflow_runs']):
-                    gh('api', '--method', 'POST', f'repos/{repository}/actions/workflows/ci.yml/dispatches', '-f', 'ref=' + matching[0])
-                    print(f'PR #{number}: dispatched Checks for its queue commit')
+            runs = gh('api', f'repos/{repository}/actions/workflows/ci.yml/runs?event=merge_group&head_sha={head["oid"]}&per_page=100')
+            if any(run['event'] == 'merge_group' and run['head_sha'] == head['oid']
+                   for run in runs['workflow_runs']):
+                print(f'PR #{number}: native merge_group Checks started')
                 return
         time.sleep(3)
-    raise RuntimeError(f'PR #{number}: queue commit was not available for CI; rerun the queue workflow')
+    raise RuntimeError(f'PR #{number}: native merge_group Checks did not start; verify GitHub App installation and the merge_group trigger (docs/merge-queue.md)')
 
 
 def queue_ready(repository, dry_run=False):
+    if not dry_run and os.environ.get('GITHUB_ACTIONS') == 'true' and (
+            os.environ.get('MISH_QUEUE_AUTH') != 'github-app' or not os.environ.get('GH_TOKEN')):
+        raise RuntimeError('Automated queue admission requires the configured GitHub App token; see docs/merge-queue.md')
     candidates = gh('pr', 'list', '--repo', repository, '--base', 'main', '--state', 'open',
                     '--limit', '1000', '--json', 'number')
     queued = []
@@ -87,7 +91,7 @@ def queue_ready(repository, dry_run=False):
         if queue['mergeQueueEntry']:
             print(f'PR #{number}: already queued')
             if not dry_run:
-                ensure_queue_checks(repository, number)
+                ensure_native_queue_checks(repository, number)
             continue
         if not eligible(pr, queue, repository):
             print(f'PR #{number}: waiting for current-head checks and branch requirements')
@@ -95,7 +99,7 @@ def queue_ready(repository, dry_run=False):
         if not dry_run:
             gh('api', 'graphql', '-f', 'query=' + ENQUEUE,
                '-f', 'id=' + queue['id'], '-f', 'head=' + pr['headRefOid'])
-            ensure_queue_checks(repository, number)
+            ensure_native_queue_checks(repository, number)
         queued.append(number)
         print(f'PR #{number}: {"eligible" if dry_run else "queued"} at {pr["headRefOid"]}')
     return queued
@@ -104,5 +108,12 @@ def queue_ready(repository, dry_run=False):
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
     parser.add_argument('--dry-run', action='store_true')
+    parser.add_argument('--check-configuration', action='store_true')
     arguments = parser.parse_args()
-    queue_ready(os.environ['GITHUB_REPOSITORY'], arguments.dry_run)
+    try:
+        if arguments.check_configuration:
+            validate_app_configuration(os.environ)
+        else:
+            queue_ready(os.environ['GITHUB_REPOSITORY'], arguments.dry_run)
+    except RuntimeError as error:
+        parser.exit(1, str(error) + '\n')
