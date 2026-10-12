@@ -6,6 +6,11 @@ use tokio::sync::{mpsc, oneshot};
 
 type Reply<T> = oneshot::Sender<Result<T>>;
 enum Command {
+    Community(
+        crate::community::Credentials,
+        crate::community::Action,
+        Reply<serde_json::Value>,
+    ),
     Authenticate(String, Reply<Option<StaffIdentity>>),
     Enroll(String, Role, bool, Reply<Enrollment>),
     Revoke(String, Reply<()>),
@@ -43,12 +48,23 @@ pub struct Coordinator {
     sender: mpsc::Sender<Command>,
 }
 impl Coordinator {
+    pub async fn community(
+        &self,
+        credentials: crate::community::Credentials,
+        action: crate::community::Action,
+    ) -> Result<serde_json::Value> {
+        self.request(|r| Command::Community(credentials, action, r))
+            .await
+    }
     pub fn start(store: EventStore, retention_days: i64) -> Self {
         let (sender, mut receiver) = mpsc::channel(128);
         std::thread::spawn(move || {
             while let Some(command) = receiver.blocking_recv() {
                 // A successful response always follows the durable database operation.
                 match command {
+                    Command::Community(credentials, action, reply) => {
+                        let _ = reply.send(store.community(credentials, action));
+                    }
                     Command::Authenticate(token, reply) => {
                         let _ = reply.send(store.authenticate(&token));
                     }
