@@ -8,10 +8,12 @@ source checkout and required Nix closures before entering an offline venue.
 Internet may be used for preparation; event operation must work with WAN
 unplugged. The installer is not an unattended disk installer.
 
-The [channel-enrollment workflow](channel-enrollment.md) is being implemented.
-Its selected create/join/deploy/export commands require feature-specific
-software evidence before use on hardware; earlier VM results do not qualify
-channel provisioning.
+The [channel-enrollment workflow](channel-enrollment.md) is implemented with
+feature-specific behavioral, simulated USB and native CI evidence. Physical
+app import, firmware interoperability and RF behavior remain unverified.
+The VM exercises an empty public channel catalog and protected routes; it does
+not qualify physical channel provisioning. See [product status](product-status.md)
+for the current milestone gates and candidate-revision requirements.
 
 ## Kit and network
 
@@ -141,7 +143,11 @@ trusted AP and verify the appliance SSH host-key fingerprint through a trusted
 local method before enrollment. Confirm boot, firmware, SSH access, Ethernet,
 USB and service behavior on Pi 4 with 4 GB RAM before advertising that target.
 The shared SD image alone does not establish an accessible first-boot console
-or physical readiness. Do not infer Pi 5 readiness from this procedure.
+or physical readiness. The current Pi 4 profile imports the generic aarch64
+SD-image module and disables redistributable firmware; verify the resulting
+boot, firmware, Ethernet and USB behavior as qualification items on the named
+hardware. These unperformed checks do not establish a known regression.
+Do not infer Pi 5 readiness from this procedure.
 
 ## USB radio and TLS
 

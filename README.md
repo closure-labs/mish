@@ -79,13 +79,20 @@ and its provisioning gates, then enroll staff and send the first message. Keep t
 
 **Evaluating or contributing:** use the build commands below, then read the
 [architecture and milestone gates](docs/roadmap.md),
+[Den composition](docs/den-architecture.md),
 [HTTP API](docs/api.md) and [contribution guide](docs/contributing.md).
 
-**Checking readiness:** consult the revision-specific
+**Checking readiness:** start with the [product status](docs/product-status.md), consult the revision-specific
 [verification evidence](docs/verification.md) and complete the
 [physical acceptance record](docs/acceptance.md) on your hardware.
 
 ## Build and verify
+
+Den aspects compose the appliance's modes, features and architecture profiles.
+The [composition guide](docs/den-architecture.md) explains where to add a feature
+or select a mode while keeping the existing package and image targets.
+Use the bounded launcher in the [contribution guide](docs/contributing.md) for
+local checks; full all-system, VM and image qualification runs on GitHub.
 
 ```bash
 nix develop --command nix flake check --no-build --all-systems

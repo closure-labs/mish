@@ -1,8 +1,7 @@
-{ lib, pkgs, ... }:
+{ lib, ... }:
 
 {
   networking.hostName = "mish-rpi5-nvme";
-  networking.firewall.enable = true;
   services.openssh.enable = true;
 
   boot.initrd.availableKernelModules = [
@@ -45,30 +44,12 @@
   documentation.nixos.enable = false;
   documentation.man.enable = false;
 
-  nix.settings.experimental-features = [
-    "nix-command"
-    "flakes"
-  ];
-
-  environment.systemPackages = [
-    pkgs.curl
-    pkgs.jq
-  ];
-
   hardware.enableRedistributableFirmware = lib.mkDefault true;
 
   services.mish = {
-    enable = true;
     profile = "sbc-rpi5-nvme";
-    domain = "mish.local";
     nixDistribution = "nixos";
     matrix.provider = "conduit";
-    nostr.relays = [ "mock://local" ];
-    openziti.enable = false;
-    geopack.enable = false;
-    radio.simulator.enable = false;
-    localAccess.enable = true;
   };
 
-  system.stateVersion = "26.05";
 }

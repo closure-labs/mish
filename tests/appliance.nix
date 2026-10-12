@@ -1,20 +1,8 @@
 { pkgs, self }:
 pkgs.testers.nixosTest {
   name = "mish-event-appliance";
-  nodes.machine = { pkgs, ... }: {
-    imports = [ self.nixosModules.mish ];
-    nixpkgs.overlays = [ self.overlays.default ];
-    environment.systemPackages = [
-      pkgs.curl
-      pkgs.jq
-    ];
-    services.mish = {
-      enable = true;
-      localAccess.enable = true;
-      radio.simulator.enable = true;
-      radio.providers = [ "meshtastic-simulated" ];
-    };
-    system.stateVersion = "26.05";
+  nodes.machine = {
+    imports = [ self.nixosModules.mish-simulation ];
   };
   testScript = ''
     machine.start()

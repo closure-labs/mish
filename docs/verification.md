@@ -5,9 +5,32 @@ runtime. Their Python commands and counts are evidence for those revisions,
 not current contributor instructions. The current runtime is Rust; use
 [contributing.md](contributing.md) for its checks.
 
+## Latest product evidence
+
+Channel enrollment merged in [PR #18](https://github.com/closure-labs/mish/pull/18)
+as `b4dec1c`, followed by the documentation update in
+[PR #19](https://github.com/closure-labs/mish/pull/19) as `a4660ac`. Its recorded
+behavioral suite contains 68 Rust tests and seven Node 24 browser tests.
+Native software and merge-group qualification passed; the x86 VM demonstrates
+HTTPS, messages/alert ACKs, restart and no-replay recovery, plus the enrollment
+landing page, an empty public channel catalog and protected-route rejection.
+It does not demonstrate a fully provisioned radio mesh.
+
+[Images run 38186639291](https://github.com/closure-labs/mish/actions/runs/38186639291)
+passed on `b4dec1c` for x86 VM/installer and ARM SD artifacts. Mish has never
+been deployed; physical Meshtastic app import, USB/RF operation, fresh-kit
+commissioning, Pi 4 qualification and rehearsal remain unperformed. The Den
+composition refactor is pending its own native software, VM, queue and image
+qualification. See [product status](product-status.md) and
+[Den architecture](den-architecture.md).
+
+The last recorded automatic queue configuration check found the GitHub App
+variable and private-key secret absent. CLI queue admission exercised required
+native merge-group checks; automatic admission still needs that setup.
+
 ## Rust runtime continuation
 
-The Rust implementation passes 38 behavioral tests. It uses Axum, Clap, a
+The initial Rust implementation passed 38 behavioral tests. It used Axum, Clap, a
 bounded Tokio coordinator, SQLite and native Meshtastic serial framing. The
 compiled appliance runtime contains no Python application package.
 
@@ -165,3 +188,9 @@ admission used the authorized CLI path. The automatic admission workflow still
 requires `MISH_QUEUE_APP_ID` and `MISH_QUEUE_APP_PRIVATE_KEY`; its
 [configuration check](https://github.com/closure-labs/mish/actions/runs/38185948748)
 reported both absent. Native merge-group validation ran without bypassing gates.
+
+[Images run 38186639291](https://github.com/closure-labs/mish/actions/runs/38186639291)
+then passed for merged feature revision `b4dec1c`, realizing the x86 VM and
+installer plus the ARM SD image. [PR #19](https://github.com/closure-labs/mish/pull/19)
+merged the documentation follow-up as `a4660ac`. Neither result closes the
+physical channel-enrollment or event-kit gates.

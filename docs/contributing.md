@@ -8,6 +8,13 @@ explain the concrete user behavior, validation performed and material remaining
 limits. Keep simulated transport, built artifacts, VM behavior and physical
 qualification separate in reports.
 
+The flake uses [Den composition](den-architecture.md). Add reusable service
+features to its feature aspects, select behavior through mode aspects and keep
+board-specific settings in architecture aspects. Host declarations select those
+aspects. Preserve exported package/module/image names and run the composition
+check when changing their wiring. The [product status](product-status.md) records
+the next acceptance gates.
+
 The [public binary cache](binary-cache.md) shares exact package, check and
 developer-shell outputs. Use --accept-flake-config when accepting its signed
 substituter. PRs read the cache; trusted main and release jobs upload.

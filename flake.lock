@@ -16,6 +16,22 @@
         "type": "github"
       }
     },
+    "den": {
+      "locked": {
+        "lastModified": 1791228708,
+        "narHash": "sha256-Go2EElCGFAhy4KMPDpV+T2CAKQujlMpVieJ1cSSaW0c=",
+        "owner": "denful",
+        "repo": "den",
+        "rev": "65c9fd40e958109f5a352c1a93ae8254bf1ed29f",
+        "type": "github"
+      },
+      "original": {
+        "owner": "denful",
+        "repo": "den",
+        "rev": "65c9fd40e958109f5a352c1a93ae8254bf1ed29f",
+        "type": "github"
+      }
+    },
     "flake-compat": {
       "locked": {
         "lastModified": 1767039857,
@@ -113,6 +129,7 @@
     },
     "root": {
       "inputs": {
+        "den": "den",
         "nixos-raspberrypi": "nixos-raspberrypi",
         "nixpkgs": "nixpkgs_2"
       }

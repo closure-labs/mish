@@ -19,13 +19,13 @@ in
     aspects = lib.mkOption {
       type = lib.types.attrsOf lib.types.anything;
       default = { };
-      description = "Internal Den-compatible provider aspect data.";
+      description = "Legacy NixOS capability metadata retained for compatibility; genuine Den aspects are composed at flake scope.";
     };
 
     quirks.meshServices = lib.mkOption {
       type = lib.types.attrsOf lib.types.anything;
       default = { };
-      description = "Stable Den-compatible mesh service quirk data.";
+      description = "Legacy NixOS mesh capability metadata retained for compatibility with existing module consumers.";
     };
   };
 

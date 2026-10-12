@@ -162,3 +162,29 @@ Physical hardware and field-pilot acceptance remain open.
   Physical app/USB qualification remains open. Automatic queue admission still
   awaits the documented GitHub App credentials; CLI admission exercised the
   native queue without bypassing checks.
+
+## Den aspect composition and product review
+
+- [x] User scope: reshape the flake using the local Den reference; organize
+  modes, features and architectures, and review roadmap/progress/status.
+- [x] Great CTO infrastructure architecture review: real Den host generation
+  and aspect composition, supported by the minimal template and output guide.
+  Pin the reference's upstream revision; preserve existing public outputs and
+  Pi 5 vendor instantiation. Scope is the Nix composition subsystem.
+- [x] Independent product audit: M0/M1 software gates passed; M2–M5 physical
+  acceptance remains open. Current main `a4660ac` passed native Checks
+  [38187467343](https://github.com/closure-labs/mish/actions/runs/38187467343)
+  and Images [38187467354](https://github.com/closure-labs/mish/actions/runs/38187467354).
+  App credentials remain absent; this is a separate repository dependency.
+- [x] Product report and stale status corrections: `docs/product-status.md`,
+  roadmap, verification and commissioning; hardware qualification precedes
+  event-kit acceptance, ARM qualification and rehearsal.
+- [x] Sequential implementation: Den dependency, aspect layers, stable host
+  generation and output/check adapters.
+- [x] Independent code/QA/security review approved. Fixed reusable state-version
+  defaults and routed the VM through the actual Den simulation mode. Native
+  composition tests cover valid modes and specific device/mode/architecture
+  rejection assertions. Bounded local package/export inventories, one x86
+  host and one simulation/state-version projection passed.
+- [ ] Native software, VM, image and merge-group qualification for this revision.
+- [ ] Commit, push and merge queue delivery. Physical deployment remains open.
