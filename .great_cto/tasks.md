@@ -280,3 +280,18 @@ passed for licensing revision `3a311ab`. All three required contexts passed in
 - [x] Make unattended App admission opt-in with `MISH_QUEUE_APP_AUTOMATION`.
   When unset, its workflow skips admission instead of requesting credentials.
   Existing App code remains available for an explicitly enabled future path.
+
+## Merge queue skipped-run diagnosis
+
+- [x] Inspect live ruleset `24893052`, recent runs and open PRs. All three
+  required contexts succeeded in merge-group `38200125296`; no open PR was
+  blocked. Skipped runs were the separate optional App admission workflow.
+- [x] Remove the optional helper's `workflow_run` trigger and rename it
+  **Optional App queue admission**. Keep manual dispatch and explicit App
+  opt-in, with existing read-only defaults and scoped token permissions.
+- [x] Preserve the current ruleset, required context names, native matrix and
+  mandatory `merge_group.checks_requested` validation. Explain historical
+  skipped admission runs separately from required queue checks.
+- [x] Bounded local verification: all 27 helper tests passed, including
+  rejection of skipped required prerequisites. Workflow lint and full native
+  validation run in GitHub; no local package or image build was started.

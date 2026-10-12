@@ -20,4 +20,5 @@ queue validation uses `merge_group.checks_requested`.
 Keep the existing merge-queue ruleset unchanged. Use native per-PR auto-merge
 with the maintainer's GitHub session for now. App-based unattended admission
 is deferred and opt-in; no App registration or credentials are required for
-the current workflow.
+the current workflow. The optional App admission helper is manual-dispatch
+only; required merge-group validation continues under Checks.
