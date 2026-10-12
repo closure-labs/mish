@@ -219,8 +219,15 @@ Physical hardware and field-pilot acceptance remain open.
 - [x] Independent infrastructure, security and QA release review approved.
   Added upload-failure coverage, explicit draft retention and final identity
   verification; seven release-helper tests passed after the final adjustment.
-- [ ] Commit, PR and native merge-group qualification.
-- [ ] Annotated initial alpha tag and successful tagged draft workflow.
+- [x] Commit, PR and native merge-group qualification: [PR #22](https://github.com/closure-labs/mish/pull/22)
+  merged as `f3921c9` after native [Checks 38192810349](https://github.com/closure-labs/mish/actions/runs/38192810349)
+  and [merge-group 38193246186](https://github.com/closure-labs/mish/actions/runs/38193246186) passed.
+- [x] Annotated `v0.1.0-alpha` tag points to that exact revision. Tagged
+  [Draft release run 38193676481](https://github.com/closure-labs/mish/actions/runs/38193676481)
+  passed native checks, x86 VM and both image builds, then created a draft
+  prerelease. Verified 39 manifest-covered asset digests and separately checked
+  the checksum file's own digest against GitHub's API. Confirmed all 40 assets
+  and draft/prerelease/source identity after upload.
 
 The draft must retain its exact source and validation run. Physical M2–M5
 acceptance remains open before any later publication decision.

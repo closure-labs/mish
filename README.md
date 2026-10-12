@@ -130,8 +130,8 @@ Rust tests and seven browser channel-selection tests under the bounded local
 development shell, with strict Clippy and formatting checks. Native GitHub
 and image results are recorded per revision. Physical installation, USB/RF
 interoperability, Pi 4 commissioning and an eight-hour event rehearsal remain
-unverified. This is a prototype for qualification, with draft releases gated
-on physical acceptance.
+unverified. This is a prototype for qualification, with release publication
+gated on physical acceptance.
 
 The first release focuses on local mesh participation and private staff
 coordination. Channel generation, scoped QR enrollment and verified USB
