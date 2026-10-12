@@ -223,3 +223,28 @@ open.
 passed both native contexts and Software qualification for the combined commit.
 PR #20 merged as `8381b5f`; image evidence above remains attributed to its
 qualified candidate `8b90573`.
+
+## Initial alpha draft qualification
+
+[PR #22](https://github.com/closure-labs/mish/pull/22) prepared the changelog,
+curated alpha notes and guarded draft creation. Local validation ran 27 helper
+tests in the bounded `nix develop` shell; seven release tests repeated after
+final draft-state safeguards. Independent infrastructure, security and QA
+reviews approved. [Native PR checks 38192810349](https://github.com/closure-labs/mish/actions/runs/38192810349)
+and [merge-group 38193246186](https://github.com/closure-labs/mish/actions/runs/38193246186)
+passed all required contexts; the PR merged as `f3921c9`.
+
+Annotated tag `v0.1.0-alpha` points to
+`f3921c9ce25990915d4d4320d51db4fda38d5c7c`.
+[Draft release run 38193676481](https://github.com/closure-labs/mish/actions/runs/38193676481)
+passed tag/version/notes checks, all-system evaluation, native x86/ARM checks,
+the x86 VM gate and x86 VM/installer plus ARM SD image realization. The draft
+gate verified checksums, expected payloads/targets, both lockfiles and source
+identity before uploading.
+
+Post-upload API verification confirmed a draft prerelease for that source and
+40 complete assets totaling 2,953,428,530 bytes. Each GitHub-reported SHA-256
+digest matches the downloadable aggregate `SHA256SUMS`, including the checksum
+file's own separately computed digest. This verification downloaded only small
+metadata and the checksum list to the workstation. It did not download or
+physically boot the images. Physical M2–M5 acceptance and publication remain open.
