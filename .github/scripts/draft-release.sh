@@ -18,7 +18,7 @@ for directory in artifacts/images-*; do
     fi
   done
 done
-cp CHANGELOG.md "$notes" docs/operator-runbook.md docs/commissioning.md docs/acceptance.md "$staging/"
+cp LICENSE CHANGELOG.md "$notes" docs/operator-runbook.md docs/commissioning.md docs/acceptance.md "$staging/"
 cat "$notes" > "$staging/release-notes.md"
 printf '\nTagged source: `%s`\n\nRelease validation: https://github.com/%s/actions/runs/%s\n' \
   "$revision" "$GITHUB_REPOSITORY" "${GITHUB_RUN_ID:?Release run required}" >> "$staging/release-notes.md"

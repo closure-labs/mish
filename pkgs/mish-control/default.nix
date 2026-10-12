@@ -29,6 +29,7 @@ rustPlatform.buildRustPackage {
   '';
 
   postInstall = ''
+    install -Dm644 LICENSE "$out/share/licenses/mish-control/LICENSE"
     makeWrapper "$out/bin/mish" "$out/bin/mish-matrix-stub" \
       --add-flags "stub matrix"
     makeWrapper "$out/bin/mish" "$out/bin/mish-openziti-stub" \
@@ -38,7 +39,7 @@ rustPlatform.buildRustPackage {
   meta = {
     description = "Mish offline event coordination service and CLI";
     homepage = "https://github.com/closure-labs/mish";
-    license = lib.licenses.asl20;
+    license = lib.licenses.agpl3Only;
     mainProgram = "mish";
     platforms = lib.platforms.unix;
   };

@@ -251,3 +251,16 @@ the earlier physical publication gate for non-stable prereleases.
   sizes and SHA-256 digests matched before and after publication.
 
 Hardware commissioning, RF testing and field rehearsal remain unperformed.
+
+## AGPLv3 licensing
+
+- [x] Owner request: change Mish to AGPLv3. Use `AGPL-3.0-only` consistently in
+  the Rust manifest, Nix metadata and documentation.
+- [x] Canonical GNU Affero GPL version 3 text added as repository and crate
+  LICENSE files; both copies are byte-identical. Install the license with the
+  Nix package and include it in future checksummed release kits.
+- [x] Preserve third-party notices and the immutable `v0.1.0-alpha` source/assets
+  with their earlier Apache-2.0 metadata. Record the new license under Unreleased.
+- [x] Bounded local verification: 27 helper tests passed, Cargo reports
+  `AGPL-3.0-only`, and pinned Nixpkgs exposes the matching `agpl3Only` license.
+  Native package/VM/image verification follows the updated GitHub revision.

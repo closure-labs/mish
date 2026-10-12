@@ -2,6 +2,14 @@
 
 User-facing changes in Mish. `0.1.0-alpha` is the initial prerelease.
 
+## Unreleased
+
+### Changed
+
+- Mish now uses AGPLv3 only (`AGPL-3.0-only`). The repository, Rust crate,
+  Nix package and future release kits include the license text. The immutable
+  `v0.1.0-alpha` source and artifacts retain their earlier Apache-2.0 metadata.
+
 ## [0.1.0-alpha] — 2026-10-11
 
 An owner-operated coordinator for offline event communication, with community

@@ -1,5 +1,9 @@
 # Contributing
 
+Mish contributions use AGPLv3 only (`AGPL-3.0-only`); see [LICENSE](../LICENSE).
+Keep the repository and Rust crate license copies identical when updating
+license text. Preserve third-party license notices.
+
 The [CI qualification policy](ci-qualification.md) documents required checks,
 change qualifiers, workflow dependencies and the separate physical gates.
 

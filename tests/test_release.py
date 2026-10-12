@@ -27,7 +27,7 @@ class ReleaseTests(unittest.TestCase):
             (root / name).mkdir(parents=True, exist_ok=True)
         shutil.copytree(ROOT / '.github', root / '.github', dirs_exist_ok=True)
         for name in ['apps/mish/Cargo.toml', 'apps/mish/Cargo.lock', 'pkgs/mish-control/default.nix',
-                     'CHANGELOG.md', f'docs/releases/{TAG}.md', 'docs/commissioning.md',
+                     'LICENSE', 'CHANGELOG.md', f'docs/releases/{TAG}.md', 'docs/commissioning.md',
                      'docs/operator-runbook.md', 'docs/acceptance.md', 'flake.lock']:
             shutil.copyfile(ROOT / name, root / name)
         # Copied Nix store fixtures must be writable only inside our temporary directory.

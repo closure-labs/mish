@@ -3,7 +3,7 @@ name = "mish"
 version = "0.1.0-alpha"
 edition = "2024"
 rust-version = "1.85"
-license = "Apache-2.0"
+license = "AGPL-3.0-only"
 description = "Offline event coordination with community and private Meshtastic channels"
 repository = "https://github.com/closure-labs/mish"
 

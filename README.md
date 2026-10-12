@@ -143,3 +143,12 @@ application messaging bridge, and waypoint/GeoPack simulations and mock/file
 Nostr publication are development facilities. Those integrations and additional
 hardware profiles remain deferred; the
 [design history](docs/mish-design-history.md) explains the narrower direction.
+
+## License
+
+Mish is licensed under the GNU Affero General Public License, version 3 only
+(`AGPL-3.0-only`). See [LICENSE](LICENSE). Third-party dependencies retain their
+own licenses.
+
+The immutable `v0.1.0-alpha` source and artifacts retain their earlier
+Apache-2.0 metadata. AGPLv3 applies to subsequent Mish revisions and releases.
