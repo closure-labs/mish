@@ -153,7 +153,14 @@ fn validate(db: &Connection) -> Result<()> {
     if actual.contains("recovery_history") {
         reference.execute_batch(RECOVERY_SCHEMA)?;
     }
-    let expected = tables(&reference)?;
+    // Accept the exact pre-room schema, then migrate only the private staged copy.
+    if !actual.contains("community_settings") {
+        reference.execute_batch("DROP TABLE community_settings; DROP TABLE guests; DROP TABLE guest_sessions; DROP TABLE rooms; DROP TABLE room_memberships; DROP TABLE room_entries; DROP TABLE room_acceptances; DROP TABLE room_moderation;")?;
+    }
+    let mut expected = tables(&reference)?;
+    if !actual.contains("community_settings") {
+        expected.remove("sqlite_sequence");
+    }
     if actual != expected {
         return Err(invalid("backup is not a compatible event journal"));
     }
@@ -264,6 +271,7 @@ fn restore_with_hook(
     {
         let mut db = Connection::open(staged.0.path()).context("cannot open staged snapshot")?;
         validate(&db)?;
+        initialize_schema(&db)?;
         db.execute_batch("PRAGMA journal_mode=DELETE; PRAGMA synchronous=FULL")?;
         let transaction = db.transaction()?;
         quarantined = transaction.execute("UPDATE records SET state='uncertain',uncertain_at=? WHERE state IN ('queued','sending')", [restored_at])?;

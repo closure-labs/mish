@@ -1,0 +1,62 @@
+name: Community load qualification
+on:
+  pull_request:
+    paths:
+      - 'apps/mish/**'
+      - 'tests/appliance.nix'
+      - 'tests/community-browser*.cjs'
+      - '.github/workflows/community-soak.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+concurrency:
+  group: community-soak-${{ github.ref }}
+  cancel-in-progress: true
+jobs:
+  soak:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 90
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+      - uses: ./.github/actions/nix
+        with:
+          public-key: ${{ vars.CACHIX_PUBKEY || 'mish.cachix.org-1:TVqZ5PamlcnYEpNEJtBz7xNmS7H5X/gXQXYVeDBD4FY=' }}
+          restore-store: 'false'
+      - name: One hour, 50 sessions, one message per second
+        run: |
+          set -o pipefail
+          echo "Revision $GITHUB_SHA" | tee community-soak.log
+          nix develop --accept-flake-config --command cargo test --manifest-path apps/mish/Cargo.toml --test http community_http_soak -- --ignored --exact --nocapture 2>&1 | tee -a community-soak.log
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9
+        if: always()
+        with:
+          name: community-soak-${{ github.sha }}
+          path: community-soak.log
+  browser:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 100
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+      - uses: ./.github/actions/nix
+        with:
+          public-key: ${{ vars.CACHIX_PUBKEY || 'mish.cachix.org-1:TVqZ5PamlcnYEpNEJtBz7xNmS7H5X/gXQXYVeDBD4FY=' }}
+          restore-store: 'false'
+      - name: Build pinned browser tools and server
+        run: |
+          nix build --impure --out-link "$RUNNER_TEMP/browser-tools" --expr '
+            let f = builtins.getFlake (toString ./.);
+                p = import f.inputs.nixpkgs { system = builtins.currentSystem; };
+            in p.symlinkJoin { name = "mish-browser-tools"; paths = [ p.chromium p.playwright-driver ]; }'
+          nix develop --accept-flake-config --command cargo build --manifest-path apps/mish/Cargo.toml
+      - name: One hour with 50 Chromium sessions
+        run: |
+          set -o pipefail
+          echo "Revision $GITHUB_SHA; ephemeral test certificate, browser trust bypass" | tee community-browser.log
+          export MISH_BROWSER_TOOLS="$RUNNER_TEMP/browser-tools"
+          nix develop --accept-flake-config --command node tests/community-browser-functional.cjs 2>&1 | tee -a community-browser.log
+          nix develop --accept-flake-config --command node tests/community-browser.cjs 2>&1 | tee -a community-browser.log
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9
+        if: always()
+        with:
+          name: community-browser-${{ github.sha }}
+          path: community-browser.log

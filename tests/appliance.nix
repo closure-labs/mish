@@ -16,7 +16,7 @@ pkgs.testers.nixosTest {
     machine.succeed("curl --fail --silent http://127.0.0.1:8787/public/announcements")
     import json
     assert json.loads(machine.succeed("curl --fail --silent http://127.0.0.1:8787/public/channels")) == {"channels": []}
-    assert "Join the event mesh" in machine.succeed("curl --fail --silent http://127.0.0.1:8787/public")
+    assert "Event rooms" in machine.succeed("curl --fail --silent http://127.0.0.1:8787/public")
     assert "chooseChannel" in machine.succeed("curl --fail --silent http://127.0.0.1:8787/channel-selection.js")
     machine.succeed("test $(curl -s -o /dev/null -w '%{http_code}' http://127.0.0.1:8787/api/channels) = 401")
     operator = json.loads(machine.succeed("mish --state-dir /var/lib/mish commission --name Operator"))
@@ -27,6 +27,18 @@ pkgs.testers.nixosTest {
             import shlex
             command += " --data " + shlex.quote(json.dumps(payload))
         return json.loads(machine.succeed(command + " http://127.0.0.1:8787" + path))
+    def guest_request(method, path, payload=None):
+        import shlex
+        command = "curl --fail --silent --cacert /var/lib/caddy/.local/share/caddy/pki/authorities/local/root.crt --resolve mish.home.arpa:443:127.0.0.1 -c /tmp/guest.cookies -b /tmp/guest.cookies -H 'Origin: https://mish.home.arpa' -H 'Content-Type: application/json' -X " + method
+        if payload is not None:
+            command += " --data " + shlex.quote(json.dumps(payload))
+        return json.loads(machine.succeed(command + " https://mish.home.arpa" + path))
+    request("POST", "/api/community/manage", {"action":"configure", "enabled":True, "enroll_per_hour":120, "posts_per_minute":30, "queue_limit":10})
+    room = request("POST", "/api/community/manage", {"action":"create", "name":"Event lobby", "public":True, "channel":None})["id"]
+    guest_request("POST", "/api/community/session", {"nickname":"Attendee"})
+    guest_request("POST", "/api/community/rooms/" + room + "/membership")
+    accepted = guest_request("POST", "/api/community/rooms/" + room + "/messages", {"key":"vm-retry", "text":"Local restart test"})
+    assert accepted["delivery"] == "local"
     staff = request("POST", "/api/staff", {"name": "Staff", "role": "staff"})
     request("POST", "/api/messages", {"text": "Private restart test"})
     request("POST", "/api/messages", {"text": "Staff reply"}, staff["token"])
@@ -36,7 +48,10 @@ pkgs.testers.nixosTest {
     machine.succeed("systemctl restart mish-control.service")
     machine.wait_for_unit("mish-control.service")
     machine.wait_for_open_port(8787)
+    assert guest_request("POST", "/api/community/rooms/" + room + "/messages", {"key":"vm-retry", "text":"Local restart test"}) == accepted
+    assert "Local restart test" in json.dumps(guest_request("GET", "/api/community/rooms/" + room + "/messages"))
     messages = request("GET", "/api/messages")
+    assert "Local restart test" not in json.dumps(messages)
     assert "Private restart test" in json.dumps(messages)
     assert "Staff reply" in json.dumps(messages)
     restored_alert = next(item for item in messages["messages"] if item["id"] == alert["id"])
@@ -59,6 +74,7 @@ pkgs.testers.nixosTest {
     machine.fail("runuser -u mish -- mish --state-dir /var/lib/mish restore --input /tmp/event-backup.sqlite")
     machine.succeed("systemctl start mish-control.service")
     machine.wait_for_open_port(8787)
+    assert guest_request("POST", "/api/community/rooms/" + room + "/messages", {"key":"vm-retry", "text":"Local restart test"}) == accepted
     recovered = request("GET", "/api/messages", bearer=staff["token"])["messages"]
     snapshot_record = next(item for item in recovered if item["id"] == snapshot_queued["id"])
     assert snapshot_record["state"] == "uncertain"

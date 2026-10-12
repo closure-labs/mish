@@ -255,3 +255,40 @@ fn repeated_recovery_keeps_provenance_and_does_not_overwrite_an_installed_databa
     );
     Ok(())
 }
+
+#[test]
+fn pre_room_snapshot_migrates_only_the_restored_copy() -> anyhow::Result<()> {
+    let dir = tempfile::tempdir()?;
+    let store = EventStore::new(&dir.path().join("old"), 100, false)?;
+    let snapshot = dir.path().join("old.sqlite");
+    let db = rusqlite::Connection::open(&snapshot)?;
+    let source = store.connect()?;
+    for table in [
+        "staff",
+        "records",
+        "acks",
+        "received",
+        "announcements",
+        "radio_plan",
+        "radio_channels",
+        "channel_access",
+    ] {
+        let sql: String = source.query_row(
+            "SELECT sql FROM sqlite_schema WHERE type='table' AND name=?",
+            [table],
+            |r| r.get(0),
+        )?;
+        db.execute_batch(&sql)?;
+    }
+    drop(db);
+    let before = std::fs::read(&snapshot)?;
+    mish::recovery::restore_snapshot(&snapshot, &dir.path().join("new"))?;
+    assert_eq!(before, std::fs::read(snapshot)?);
+    let new = EventStore::new(&dir.path().join("new"), 100, false)?;
+    assert!(
+        !new.connect()?
+            .query_row("SELECT enabled FROM community_settings", [], |r| r
+                .get::<_, bool>(0))?
+    );
+    Ok(())
+}

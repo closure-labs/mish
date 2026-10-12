@@ -21,7 +21,7 @@ pub struct AppState {
     pub legacy: crate::storage::MishStore,
     pub legacy_slots: std::sync::Arc<tokio::sync::Semaphore>,
 }
-pub struct ApiError(StatusCode, String);
+pub struct ApiError(pub(crate) StatusCode, pub(crate) String);
 impl From<anyhow::Error> for ApiError {
     fn from(error: anyhow::Error) -> Self {
         if error.downcast_ref::<InputError>().is_some() {
@@ -501,6 +501,7 @@ pub fn router(state: AppState) -> Router {
         )
         .route("/public/announcements", get(public))
         .merge(private)
+        .merge(crate::community_http::router())
         .fallback(|| async { ApiError(StatusCode::NOT_FOUND, "route not found".into()) })
         .layer(DefaultBodyLimit::max(16384))
         .layer(middleware::from_fn(headers))

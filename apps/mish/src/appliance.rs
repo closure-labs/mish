@@ -27,7 +27,7 @@ pub fn now() -> f64 {
         .as_secs_f64()
 }
 
-fn random_hex(bytes: usize) -> Result<String> {
+pub(crate) fn random_hex(bytes: usize) -> Result<String> {
     let mut data = vec![0; bytes];
     SysRng.try_fill_bytes(&mut data)?;
     Ok(hex::encode(data))
@@ -70,6 +70,7 @@ pub fn initialize_schema(db: &Connection) -> Result<()> {
         }
     }
     crate::channel_store::initialize_channel_schema(db)?;
+    crate::community::initialize(db)?;
     Ok(())
 }
 
@@ -299,6 +300,8 @@ impl EventStore {
             }
         };
         transaction.execute("INSERT INTO records(id,text,kind,author,created,expires,responder,state,packet_id,channel_id,channel_fingerprint) VALUES(?,?,?,?,?,?,?,'queued',NULL,?,?)", params![id, record.text.as_str(), record.kind.as_str(), record.author, now(), record.expires, record.responder.as_ref().map(StaffName::as_str),record.channel_id,binding.map(|b| b.fingerprint)])?;
+        // Only messages accepted after mapping creation enter a room; alert internals stay private.
+        transaction.execute("INSERT INTO room_entries(room_id,actor,label,record_id,created) SELECT rooms.id,r.author,COALESCE(s.name,'Staff') || '#' || substr(r.author,1,8),r.id,r.created FROM records r JOIN rooms ON rooms.channel_id=r.channel_id AND rooms.fingerprint=r.channel_fingerprint LEFT JOIN staff s ON s.id=r.author WHERE r.id=? AND r.kind='message' AND rooms.archived=0", [&id])?;
         transaction.commit()?;
         self.record(&id)?
             .ok_or_else(|| anyhow::anyhow!("accepted record disappeared"))
@@ -482,7 +485,7 @@ impl EventStore {
         )?;
         let records = {
             let mut statement = transaction
-                .prepare("SELECT * FROM records WHERE state='queued' ORDER BY created LIMIT 100")?;
+                .prepare("SELECT * FROM records WHERE state='queued' ORDER BY (author LIKE 'guest:%'),created LIMIT 100")?;
             statement
                 .query_map([], |row| {
                     Ok(PendingRecord {
@@ -594,7 +597,9 @@ impl EventStore {
                 )?;
             }
         } else {
-            transaction.execute("INSERT INTO records(id,text,kind,author,created,expires,responder,state,packet_id,channel_id,channel_fingerprint) VALUES(?,?,'message',?,?,NULL,NULL,'received',?,?,?)", params![format!("RF-{}", random_hex(8)?), text, format!("radio:{node}:channel:{channel}"), now(), packet_id,channel_id,mapping.as_ref().map(|b| &b.fingerprint)])?;
+            let record_id = format!("RF-{}", random_hex(8)?);
+            transaction.execute("INSERT INTO records(id,text,kind,author,created,expires,responder,state,packet_id,channel_id,channel_fingerprint) VALUES(?,?,'message',?,?,NULL,NULL,'received',?,?,?)", params![record_id, text, format!("radio:{node}:channel:{channel}"), now(), packet_id,channel_id,mapping.as_ref().map(|b| &b.fingerprint)])?;
+            transaction.execute("INSERT INTO room_entries(room_id,actor,label,record_id,created) SELECT rooms.id,records.author,?,records.id,records.created FROM records JOIN rooms ON rooms.channel_id=records.channel_id AND rooms.fingerprint=records.channel_fingerprint WHERE records.id=? AND records.state='received' AND rooms.archived=0 AND NOT EXISTS(SELECT 1 FROM room_entries WHERE record_id=records.id)", params![format!("Radio {node}"),record_id])?;
         }
         transaction.commit()?;
         Ok(true)
@@ -644,6 +649,12 @@ impl EventStore {
             "DELETE FROM acks WHERE record_id IN (SELECT id FROM records WHERE created<?)",
             [cutoff],
         )?;
+        removed += transaction.execute("DELETE FROM room_moderation WHERE created<?", [cutoff])?;
+        removed += transaction.execute("DELETE FROM room_entries WHERE created<?", [cutoff])?;
+        removed += transaction.execute("DELETE FROM room_acceptances WHERE created<?", [cutoff])?;
+        removed += transaction.execute("DELETE FROM guest_sessions WHERE expires<?", [cutoff])?;
+        removed += transaction.execute("DELETE FROM room_memberships WHERE actor IN (SELECT 'guest:' || id FROM guests WHERE created<? AND NOT EXISTS(SELECT 1 FROM guest_sessions WHERE guest_id=guests.id))", [cutoff])?;
+        removed += transaction.execute("DELETE FROM guests WHERE created<? AND NOT EXISTS(SELECT 1 FROM guest_sessions WHERE guest_id=guests.id)", [cutoff])?;
         removed += transaction.execute("DELETE FROM records WHERE created<?", [cutoff])?;
         removed += transaction.execute("DELETE FROM announcements WHERE published<?", [cutoff])?;
         removed += transaction.execute("DELETE FROM received WHERE created<?", [cutoff])?;
