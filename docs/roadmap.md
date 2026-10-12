@@ -80,8 +80,11 @@ with the source revision, command, environment and result.
 
 The [channel-enrollment design](channel-enrollment.md) extends these milestones
 with existing-channel import, generated event meshes, public/private QR scope
-and verified USB provisioning. The Rust implementation has behavioral tests; previous
-application/VM checks do not establish those new behaviors.
+and verified USB provisioning. The implemented Rust feature has behavioral and
+simulated USB evidence; physical app/USB/RF acceptance remains open. See
+[product status](product-status.md) for the current revision evidence and
+dependency-ordered next work, including [Den composition](den-architecture.md)
+qualification.
 
 | Milestone | Depends on | Deliverable | Acceptance gate |
 |---|---|---|---|
@@ -95,6 +98,11 @@ application/VM checks do not establish those new behaviors.
 Delivered code may cover a later milestone before an earlier physical gate
 passes. This does not close that milestone. Releases stay drafts until physical
 acceptance evidence is recorded.
+
+M0 and M1 software gates have passed. M2 and M3 have implemented software;
+M4 has realized ARM artifacts. M2–M5 physical gates remain open, and Mish has
+never been deployed. Native checks and images must be qualified again for the
+Den restructuring revision; earlier results do not establish that change.
 
 ## Alert semantics
 
