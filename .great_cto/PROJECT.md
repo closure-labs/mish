@@ -16,3 +16,8 @@ acceptance, including deployment of a prerelease.
 Use `nix develop` to execute application code and project scripts. GitHub
 checks run natively on x86 and ARM and include the x86 appliance VM. Merge
 queue validation uses `merge_group.checks_requested`.
+
+Keep the existing merge-queue ruleset unchanged. Use native per-PR auto-merge
+with the maintainer's GitHub session for now. App-based unattended admission
+is deferred and opt-in; no App registration or credentials are required for
+the current workflow.

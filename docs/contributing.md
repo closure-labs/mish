@@ -91,10 +91,10 @@ Review its inputs before marking it ready; that action triggers required PR
 Checks. Checks created by `GITHUB_TOKEN` may need workflow approval.
 
 Main now requires both native Checks jobs and merge-queue validation. The
-[automatic queue workflow](merge-queue.md) admits ready PRs from repository
-branches after successful current-head Checks; draft maintenance proposals
-remain pending operator review. Queue admission uses trusted main code and
-keeps PR checks read-only. Version tags create draft releases; hardware
+[native queue path](merge-queue.md) uses per-PR auto-merge with an authenticated
+maintainer session. App-based unattended admission is deferred and opt-in;
+draft maintenance proposals remain pending operator review. PR checks stay
+read-only. Version tags create draft releases; hardware
 evidence is required before stable publication. The owner waived the physical
 publication gate for non-stable prereleases; software and integrity gates still
 apply. Workflow YAML alone does not set
