@@ -9,7 +9,6 @@ use prost::Message;
 use serde::{Deserialize, Serialize};
 use std::{io::Write, path::Path, time::Duration};
 use tokio::io::{AsyncRead, AsyncReadExt, AsyncWrite, AsyncWriteExt};
-use tokio_serial::SerialPortBuilderExt;
 
 const MAX_FRAME: usize = 512;
 
@@ -563,18 +562,11 @@ impl<S: AsyncRead + AsyncWrite + Unpin> Session<S> {
     }
 }
 
-fn open(device: &str) -> Result<tokio_serial::SerialStream> {
-    let path = Path::new(device);
-    if path.parent() != Some(Path::new("/dev/serial/by-id")) || path.file_name().is_none() {
-        bail!("USB commissioning requires a stable /dev/serial/by-id device path");
-    }
-    tokio_serial::new(device, 115_200)
-        .open_native_async()
-        .context("opening USB radio for commissioning")
-}
-
 pub async fn inspect(device: &str) -> Result<RadioSnapshot> {
-    Session::connect(open(device)?).await?.snapshot().await
+    Session::connect(crate::radio_endpoint::open(device).await?)
+        .await?
+        .snapshot()
+        .await
 }
 
 /// Caller must stop the live worker before opening the commissioning serial port.
@@ -584,7 +576,12 @@ pub async fn apply(
     plan: &ProvisionPlan,
     recovery_path: &Path,
 ) -> Result<RadioSnapshot> {
-    apply_stream(open(device)?, plan, recovery_path).await
+    apply_stream(
+        crate::radio_endpoint::open(device).await?,
+        plan,
+        recovery_path,
+    )
+    .await
 }
 
 // The complete production sequence also runs against bounded duplex USB fixtures.
