@@ -252,7 +252,10 @@ the earlier physical publication gate for non-stable prereleases.
 
 Hardware commissioning, RF testing and field rehearsal remain unperformed.
 
-## AGPLv3 licensing
+## Historical AGPLv3 licensing
+
+Superseded by the owner's request to return Mish to Apache 2.0. Current license
+text and metadata use `Apache-2.0`; the completed work below is historical.
 
 - [x] Owner request: change Mish to AGPLv3. Use `AGPL-3.0-only` consistently in
   the Rust manifest, Nix metadata and documentation.

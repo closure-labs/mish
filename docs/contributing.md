@@ -1,6 +1,6 @@
 # Contributing
 
-Mish contributions use AGPLv3 only (`AGPL-3.0-only`); see [LICENSE](../LICENSE).
+Mish contributions use Apache 2.0 (`Apache-2.0`); see [LICENSE](../LICENSE).
 Keep the repository and Rust crate license copies identical when updating
 license text. Preserve third-party license notices.
 

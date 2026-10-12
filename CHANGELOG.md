@@ -31,9 +31,9 @@ User-facing changes in Mish. `0.1.0-alpha` is the initial prerelease.
 
 - Guest radio queues are bounded and staff transmissions take priority. Wi-Fi
   activity does not consume radio airtime unless a room is explicitly mapped.
-- Mish now uses AGPLv3 only (`AGPL-3.0-only`). The repository, Rust crate,
-  Nix package and future release kits include the license text. The immutable
-  `v0.1.0-alpha` source and artifacts retain their earlier Apache-2.0 metadata.
+- Mish returns to Apache 2.0 (`Apache-2.0`). The repository, Rust crate,
+  Nix package and future release kits include the license text. Published
+  release tags and artifacts are unchanged.
 
 ### Qualification
 

@@ -153,9 +153,5 @@ alerts. See [profiles, source pins, licenses and qualification](docs/optional-me
 
 ## License
 
-Mish is licensed under the GNU Affero General Public License, version 3 only
-(`AGPL-3.0-only`). See [LICENSE](LICENSE). Third-party dependencies retain their
-own licenses.
-
-The immutable `v0.1.0-alpha` source and artifacts retain their earlier
-Apache-2.0 metadata. AGPLv3 applies to subsequent Mish revisions and releases.
+Mish is licensed under the Apache License, Version 2.0 (`Apache-2.0`).
+See [LICENSE](LICENSE). Third-party dependencies retain their own licenses.

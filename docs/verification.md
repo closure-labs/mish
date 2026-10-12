@@ -270,13 +270,17 @@ draft-preparation state.
 No images were rebuilt or physically booted during publication. Physical M2–M5
 acceptance remains open.
 
-## AGPLv3 package and artifact qualification
+## Historical AGPLv3 package and artifact qualification
 
-[PR #24](https://github.com/closure-labs/mish/pull/24) changes subsequent Mish
-revisions to `AGPL-3.0-only`. Canonical GNU AGPLv3 text is byte-identical in the
-repository and crate LICENSE files. Cargo and pinned Nixpkgs metadata agree;
-the Nix package installs the license and future image/release kits include it
-before checksums are generated. Third-party notices are unchanged.
+This records the earlier license change. The owner subsequently requested a
+return to Apache 2.0; current licensing is stated in [LICENSE](../LICENSE).
+The evidence below applies to the historical revisions cited.
+
+[PR #24](https://github.com/closure-labs/mish/pull/24) changed Mish
+revisions at that time to `AGPL-3.0-only`. Canonical GNU AGPLv3 text was
+byte-identical in the repository and crate LICENSE files. Cargo and pinned
+Nixpkgs metadata agreed; the package and release tooling were updated to ship
+the license before generating checksums. Third-party notices were unchanged.
 
 Bounded local verification passed 27 helper tests and checked Cargo metadata,
 the pinned Nix license identifier and both license copies. Independent

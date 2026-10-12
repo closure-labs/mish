@@ -39,7 +39,7 @@ rustPlatform.buildRustPackage {
   meta = {
     description = "Mish offline event coordination service and CLI";
     homepage = "https://github.com/closure-labs/mish";
-    license = lib.licenses.agpl3Only;
+    license = lib.licenses.asl20;
     mainProgram = "mish";
     platforms = lib.platforms.unix;
   };
