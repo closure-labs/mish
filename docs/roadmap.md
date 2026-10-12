@@ -96,8 +96,10 @@ qualification.
 | M5 field pilot | M3 and M4 | Rehearsal, RF/resource measurements, artifacts | Small-event checklist passes and remaining limitations are documented |
 
 Delivered code may cover a later milestone before an earlier physical gate
-passes. This does not close that milestone. Releases stay drafts until physical
-acceptance evidence is recorded.
+passes. This does not close that milestone. Stable releases stay drafts until
+physical acceptance evidence is recorded. The owner waived that publication
+gate for non-stable prereleases; software and artifact-integrity gates remain
+required. The [decision log](decisions/DECISION-LOG.md) records the waiver.
 
 M0 and M1 software gates have passed. M2 and M3 have implemented software;
 M4 has realized ARM artifacts. M2–M5 physical gates remain open, and Mish has

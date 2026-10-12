@@ -108,6 +108,13 @@ acceptance record. GitHub validation establishes software behavior and realized
 images; it does not establish hardware or RF readiness.
 
 Publication remains a separate operator action after the required physical
-acceptance evidence is recorded. Release immutability makes publication the
+acceptance evidence is recorded for stable releases. The owner waived this gate
+for non-stable prereleases, including alpha, beta and release candidates. Use
+a prerelease version and GitHub's prerelease flag, retain software and integrity
+checks, and state unverified hardware/RF testing in the release notes. This
+waiver does not qualify physical milestones or authorize production deployment.
+Tag automation continues to prepare drafts; publication requires operator
+authorization. Stable releases and production deployment retain the physical gate.
+Release immutability makes publication the
 point after which image assets and the release tag cannot be replaced. See
 [GitHub's release guidance](https://docs.github.com/en/repositories/releasing-projects-on-github/managing-releases-in-a-repository).

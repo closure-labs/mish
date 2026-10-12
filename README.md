@@ -118,7 +118,7 @@ delivery-state boundaries.
 
 ## Readiness and scope
 
-The initial `v0.1.0-alpha` draft is described in the
+The initial `v0.1.0-alpha` prerelease is described in the
 [changelog](CHANGELOG.md) and [alpha notes](docs/releases/v0.1.0-alpha.md).
 See [release preparation](docs/building-alpha.md#preparing-a-tagged-alpha) for
 the checks required before creating a draft.
@@ -130,8 +130,10 @@ Rust tests and seven browser channel-selection tests under the bounded local
 development shell, with strict Clippy and formatting checks. Native GitHub
 and image results are recorded per revision. Physical installation, USB/RF
 interoperability, Pi 4 commissioning and an eight-hour event rehearsal remain
-unverified. This is a prototype for qualification, with release publication
-gated on physical acceptance.
+unverified. The owner waived the physical publication gate for non-stable
+prereleases so they can be distributed for development and hardware
+qualification. Stable releases, production deployment and event readiness
+retain physical acceptance.
 
 The first release focuses on local mesh participation and private staff
 coordination. Channel generation, scoped QR enrollment and verified USB
@@ -141,3 +143,12 @@ application messaging bridge, and waypoint/GeoPack simulations and mock/file
 Nostr publication are development facilities. Those integrations and additional
 hardware profiles remain deferred; the
 [design history](docs/mish-design-history.md) explains the narrower direction.
+
+## License
+
+Mish is licensed under the GNU Affero General Public License, version 3 only
+(`AGPL-3.0-only`). See [LICENSE](LICENSE). Third-party dependencies retain their
+own licenses.
+
+The immutable `v0.1.0-alpha` source and artifacts retain their earlier
+Apache-2.0 metadata. AGPLv3 applies to subsequent Mish revisions and releases.

@@ -1,5 +1,9 @@
 # Contributing
 
+Mish contributions use AGPLv3 only (`AGPL-3.0-only`); see [LICENSE](../LICENSE).
+Keep the repository and Rust crate license copies identical when updating
+license text. Preserve third-party license notices.
+
 The [CI qualification policy](ci-qualification.md) documents required checks,
 change qualifiers, workflow dependencies and the separate physical gates.
 
@@ -91,6 +95,8 @@ Main now requires both native Checks jobs and merge-queue validation. The
 branches after successful current-head Checks; draft maintenance proposals
 remain pending operator review. Queue admission uses trusted main code and
 keeps PR checks read-only. Version tags create draft releases; hardware
-evidence is required before publication. Workflow YAML alone does not set
+evidence is required before stable publication. The owner waived the physical
+publication gate for non-stable prereleases; software and integrity gates still
+apply. Workflow YAML alone does not set
 repository merge policy: the active ruleset configuration is also recorded
 in `.github/merge-queue-rules.json`.

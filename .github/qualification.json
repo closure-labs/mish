@@ -15,7 +15,7 @@
     "appliance": ["hosts/", "modules/", "nix/", "pkgs/"],
     "contracts": ["schemas/", "examples/", "catalog/"],
     "validation": ["tests/", "scripts/", ".github/"],
-    "documentation": ["docs/", "README.md", "CHANGELOG.md", ".great_cto/"]
+    "documentation": ["docs/", "README.md", "CHANGELOG.md", "LICENSE", ".great_cto/"]
   },
   "required_checks": [
     "checks (ubuntu-24.04, x86_64-linux)",
