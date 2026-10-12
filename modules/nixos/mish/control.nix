@@ -62,7 +62,11 @@ let
       providers = cfg.radio.providers;
       meshtastic = {
         enable = cfg.radio.meshtastic.enable;
-        device = cfg.radio.meshtastic.device;
+        device =
+          if cfg.radio.meshtastic.tcpEndpoint == null then
+            cfg.radio.meshtastic.device
+          else
+            "tcp://${cfg.radio.meshtastic.tcpEndpoint}";
         channel = cfg.radio.meshtastic.channel;
         sendIntervalSeconds =
           if cfg.radio.meshtastic.enable then cfg.radio.meshtastic.sendIntervalSeconds else 0;
@@ -90,6 +94,26 @@ let
 in
 {
   config = lib.mkIf cfg.enable {
+    assertions = [
+      {
+        assertion =
+          cfg.localAccess.tlsMode != "external"
+          ||
+            builtins.all
+              (
+                p:
+                p != null
+                && lib.hasPrefix "/" p
+                && !(lib.hasPrefix "/nix/store/" p)
+                && builtins.match "[-A-Za-z0-9_./]+" p != null
+              )
+              [
+                cfg.localAccess.certificateFile
+                cfg.localAccess.keyFile
+              ];
+        message = "External event TLS requires runtime certificate/key paths outside the Nix store.";
+      }
+    ];
     den.quirks.meshServices.control = {
       localUrl = "http://${cfg.api.bindHost}:${toString cfg.api.port}";
       matrixReleaseGated = releaseGatedMatrix;
@@ -103,7 +127,12 @@ in
     services.caddy = lib.mkIf cfg.localAccess.enable {
       enable = true;
       virtualHosts.${cfg.localAccess.hostName}.extraConfig = ''
-        tls internal
+        ${
+          if cfg.localAccess.tlsMode == "internal" then
+            "tls internal"
+          else
+            "tls \"${toString cfg.localAccess.certificateFile}\" \"${toString cfg.localAccess.keyFile}\""
+        }
         reverse_proxy 127.0.0.1:${toString cfg.api.port}
       '';
     };

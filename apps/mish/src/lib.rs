@@ -26,3 +26,4 @@ impl std::error::Error for InputError {}
 pub fn invalid(message: impl Into<String>) -> anyhow::Error {
     InputError(message.into()).into()
 }
+pub mod radio_endpoint;

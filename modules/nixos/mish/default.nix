@@ -71,6 +71,24 @@ in
       description = "Days of event records retained before operator cleanup.";
     };
     localAccess = {
+      tlsMode = lib.mkOption {
+        type = lib.types.enum [
+          "internal"
+          "external"
+        ];
+        default = "internal";
+        description = "Explicit local CA or pre-provisioned event certificate mode.";
+      };
+      certificateFile = lib.mkOption {
+        type = lib.types.nullOr lib.types.str;
+        default = null;
+        description = "Runtime PEM certificate path outside the Nix store; required for external TLS.";
+      };
+      keyFile = lib.mkOption {
+        type = lib.types.nullOr lib.types.str;
+        default = null;
+        description = "Runtime private key path outside the Nix store; readable only by the operator and Caddy.";
+      };
       enable = lib.mkEnableOption "Caddy HTTPS through an external Ethernet access point";
       hostName = lib.mkOption {
         type = lib.types.str;
@@ -198,6 +216,11 @@ in
 
       meshtastic = {
         enable = lib.mkEnableOption "Meshtastic USB application transport";
+        tcpEndpoint = lib.mkOption {
+          type = lib.types.nullOr lib.types.str;
+          default = null;
+          description = "Optional literal IP:port for meshtasticd (for example 127.0.0.1:4403); uses verified channel semantics.";
+        };
         device = lib.mkOption {
           type = lib.types.str;
           default = "/dev/serial/by-id/REPLACE-WITH-RADIO-ID";

@@ -170,6 +170,14 @@ lib.genAttrs linuxSystems (
         pkgs.runCommand "mish-den-composition-check" { } ''
           touch "$out"
         '';
+      event-connectivity = import ./event-connectivity-check.nix {
+        inherit
+          pkgs
+          lib
+          self
+          system
+          ;
+      };
       channel-selection =
         pkgs.runCommand "mish-channel-selection-check"
           {

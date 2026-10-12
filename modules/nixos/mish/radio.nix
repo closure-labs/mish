@@ -40,7 +40,9 @@ in
   config = lib.mkIf cfg.enable {
     assertions = [
       {
-        assertion = radio.meshtastic.enable -> lib.hasPrefix "/dev/serial/by-id/" radio.meshtastic.device;
+        assertion =
+          (radio.meshtastic.enable && radio.meshtastic.tcpEndpoint == null)
+          -> lib.hasPrefix "/dev/serial/by-id/" radio.meshtastic.device;
         message = "Meshtastic USB must use a stable /dev/serial/by-id path.";
       }
       {

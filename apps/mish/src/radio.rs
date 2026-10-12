@@ -24,7 +24,6 @@ use tokio::{
     sync::{mpsc, watch},
     task::JoinHandle,
 };
-use tokio_serial::SerialPortBuilderExt;
 
 const MAX_FRAME: usize = 512;
 const MAX_TEXT: usize = 200;
@@ -562,12 +561,8 @@ impl Worker {
             bail!("radio send interval must be finite and positive (simulator permits zero)");
         }
         let device = settings["device"].as_str().unwrap_or_default().to_owned();
-        if adapter == "meshtastic"
-            && (std::path::Path::new(&device).parent()
-                != Some(std::path::Path::new("/dev/serial/by-id"))
-                || std::path::Path::new(&device).file_name().is_none())
-        {
-            bail!("radio device must use /dev/serial/by-id/");
+        if adapter == "meshtastic" {
+            crate::radio_endpoint::validate(&device)?;
         }
         let status = Arc::new(Mutex::new(
             if adapter == "disabled" {
@@ -718,12 +713,12 @@ pub fn start(store: Coordinator, config: &Value) -> Result<RadioHandle> {
             } else if worker.mode == Adapter::Meshtastic {
                 if serial.is_none() && now >= worker.retry_at {
                     *worker.status.lock().unwrap() = "configuring".into();
-                    let opened = tokio_serial::new(&worker.device, 115200).open_native_async();
+                    let opened = tokio::select! { result = crate::radio_endpoint::open(&worker.device) => result, _ = receiver.changed() => break };
                     let connected = match opened {
                         Ok(stream) => {
                             tokio::select! { result = SerialConnection::connect_checked(stream, worker.channel, &worker.store, true) => Some(result), _ = receiver.changed() => None }
                         }
-                        Err(error) => Some(Err(error.into())),
+                        Err(error) => Some(Err(error)),
                     };
                     match connected {
                         Some(Ok(connection)) => {
