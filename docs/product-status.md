@@ -44,20 +44,25 @@ All three required contexts passed in
 PR #20 merged as `8381b5f`. The composition refactor is delivered; the remaining
 product acceptance work below requires hardware and field evidence.
 
-## Initial alpha draft
+## Initial alpha prerelease
 
-`v0.1.0-alpha` is prepared at tagged source `f3921c9`, delivered through
+`v0.1.0-alpha` was published as an immutable prerelease at tagged source
+`f3921c9`, delivered through
 [PR #22](https://github.com/closure-labs/mish/pull/22). The
 [tagged release workflow](https://github.com/closure-labs/mish/actions/runs/38193676481)
 passed native x86/ARM checks, the x86 VM gate and VM/installer/SD image builds.
-The [draft prerelease](https://github.com/closure-labs/mish/releases/tag/untagged-6a68b87966db266145a7)
+The [alpha prerelease](https://github.com/closure-labs/mish/releases/tag/v0.1.0-alpha)
 contains 40 assets. The 39 manifest-covered uploaded digests match `SHA256SUMS`;
 the checksum file's own digest was computed separately and matched GitHub's API.
-Source, tag and draft identity were checked separately after upload.
+Source, tag and draft identity were checked separately after upload. Publication
+verification confirmed the same source and all 40 asset identities/digests,
+prerelease status and not-latest status.
 
 See the [changelog](../CHANGELOG.md) and [alpha notes](releases/v0.1.0-alpha.md)
-for capabilities, prototype interface changes and limitations. Draft preparation
-does not change the physical milestone status below or authorize publication.
+for capabilities, prototype interface changes and limitations. The owner
+explicitly waived physical acceptance as a publication gate for non-stable
+prereleases; [decision D-0001](decisions/DECISION-LOG.md) records the policy.
+Physical milestone status remains unchanged.
 
 ## Milestone status
 
@@ -97,8 +102,10 @@ the repository-scoped GitHub App to complete automatic admission; this does
 not block radio qualification or change appliance runtime behavior.
 
 Release workflows create drafts and retain versioned artifacts and checksums.
-Physical acceptance remains open, so no release is qualified for event use or
-publication. Under 1 GB application RAM, 30-minute commissioning and RF
+Physical acceptance remains open, so event use remains unqualified.
+Non-stable prereleases have an explicit publication waiver; stable releases and
+production deployment retain the physical gate. Under 1 GB application RAM,
+30-minute commissioning and RF
 performance remain targets to measure. Matrix, OpenZiti, Reticulum messaging,
 replication, automatic failover and additional board qualification remain
 deferred.

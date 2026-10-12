@@ -110,5 +110,6 @@ they do not close M2–M5 physical gates.
 
 The pre-refactor source is `a4660ac`. Restoring that source restores the prior
 flake; no application database or credential migration is introduced.
-There is no deployed appliance to update. Production installation and immutable
-release publication still require the recorded physical acceptance.
+There is no deployed appliance to update. Production installation still requires
+recorded physical acceptance. Stable release publication also requires it;
+the owner waived the physical publication gate for non-stable prereleases.

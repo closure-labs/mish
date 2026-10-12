@@ -248,4 +248,24 @@ GitHub-reported SHA-256 digests match the downloadable aggregate `SHA256SUMS`.
 The checksum file's own digest was computed separately and matched GitHub's API.
 This verification downloaded only small
 metadata and the checksum list to the workstation. It did not download or
-physically boot the images. Physical M2–M5 acceptance and publication remain open.
+physically boot the images. Physical M2–M5 acceptance remained open when the
+draft was prepared; the subsequent publication decision is recorded below.
+
+## Initial alpha publication under the non-stable waiver
+
+The owner waived physical acceptance as a publication gate for non-stable
+prereleases. [Decision D-0001](decisions/DECISION-LOG.md) records the scope:
+software and integrity checks remain required; stable publication and production
+deployment retain physical acceptance. Tagged automation still prepares drafts.
+
+[`v0.1.0-alpha`](https://github.com/closure-labs/mish/releases/tag/v0.1.0-alpha)
+was published at `2026-10-12T02:46:13Z`. Pre-publication verification confirmed
+the successful tagged workflow, exact source, complete asset set and all 40
+SHA-256 digests. Post-publication verification confirmed immutable status,
+prerelease status, not-latest status and unchanged tag/source and asset
+identities, sizes and digests. The public notes describe the waiver and retain
+the unverified hardware/RF status; bundled documents preserve their historical
+draft-preparation state.
+
+No images were rebuilt or physically booted during publication. Physical M2–M5
+acceptance remains open.

@@ -118,7 +118,7 @@ delivery-state boundaries.
 
 ## Readiness and scope
 
-The initial `v0.1.0-alpha` draft is described in the
+The initial `v0.1.0-alpha` prerelease is described in the
 [changelog](CHANGELOG.md) and [alpha notes](docs/releases/v0.1.0-alpha.md).
 See [release preparation](docs/building-alpha.md#preparing-a-tagged-alpha) for
 the checks required before creating a draft.
@@ -130,8 +130,10 @@ Rust tests and seven browser channel-selection tests under the bounded local
 development shell, with strict Clippy and formatting checks. Native GitHub
 and image results are recorded per revision. Physical installation, USB/RF
 interoperability, Pi 4 commissioning and an eight-hour event rehearsal remain
-unverified. This is a prototype for qualification, with release publication
-gated on physical acceptance.
+unverified. The owner waived the physical publication gate for non-stable
+prereleases so they can be distributed for development and hardware
+qualification. Stable releases, production deployment and event readiness
+retain physical acceptance.
 
 The first release focuses on local mesh participation and private staff
 coordination. Channel generation, scoped QR enrollment and verified USB

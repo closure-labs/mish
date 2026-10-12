@@ -1,15 +1,16 @@
 # Changelog
 
-User-facing changes in Mish. This is the first alpha release being prepared;
-there is no earlier tagged release in the repository history.
+User-facing changes in Mish. `0.1.0-alpha` is the initial prerelease.
 
-## [0.1.0-alpha] — draft
+## [0.1.0-alpha] — 2026-10-11
 
 An owner-operated coordinator for offline event communication, with community
 Meshtastic enrollment and private staff/department coordination. Software and
 image builds are qualified at the revisions in the
 [verification record](docs/verification.md). Physical installation, radio
 interoperability and field acceptance remain open.
+The owner waived physical acceptance as a publication gate for non-stable
+prereleases. Hardware/RF qualification remains open for this alpha.
 
 ### Added
 
@@ -64,6 +65,6 @@ access requires key rotation and radio re-enrollment. Matrix/OpenZiti are
 optional health stubs; additional transports, replication and automatic
 failover remain deferred.
 
-See the [draft alpha notes](docs/releases/v0.1.0-alpha.md),
+See the [alpha notes](docs/releases/v0.1.0-alpha.md),
 [product status](docs/product-status.md) and
 [physical acceptance record](docs/acceptance.md).

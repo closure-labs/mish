@@ -229,5 +229,25 @@ Physical hardware and field-pilot acceptance remain open.
   the checksum file's own digest against GitHub's API. Confirmed all 40 assets
   and draft/prerelease/source identity after upload.
 
-The draft must retain its exact source and validation run. Physical M2–M5
-acceptance remains open before any later publication decision.
+The prepared release retains its exact source and validation run. Physical
+M2–M5 acceptance remains open. The subsequent owner waiver below supersedes
+the earlier physical publication gate for non-stable prereleases.
+
+## Non-stable publication waiver and initial alpha publication
+
+- [x] Owner approval: “lets bypass physical acceptance for the alpha release”,
+  clarified as “waive it for non-stable releases”. Decision D-0001 records the
+  general publication waiver for prerelease versions marked as GitHub prereleases.
+  Stable publication and production deployment retain physical acceptance.
+- [x] Policy and notes: preserve software/integrity gates and unverified M2–M5;
+  update the roadmap, release guidance, changelog and public alpha notes.
+  Tagged workflows continue preparing drafts; future publication still needs
+  operator authorization.
+- [x] Independent infrastructure and documentation reviews approved the scope
+  and release-note qualification. No runtime or image build inputs changed.
+- [x] Publication: `v0.1.0-alpha` published at `2026-10-12T02:46:13Z` as an
+  immutable prerelease, not latest. Native release workflow `38193676481`
+  remained successful; source stayed `f3921c9` and all 40 asset identities,
+  sizes and SHA-256 digests matched before and after publication.
+
+Hardware commissioning, RF testing and field rehearsal remain unperformed.
