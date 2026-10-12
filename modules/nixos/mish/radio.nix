@@ -38,7 +38,16 @@ let
 in
 {
   config = lib.mkIf cfg.enable {
+    services.mesh-services.reservedDevices =
+      lib.optional (
+        radio.meshtastic.enable && (radio.meshtastic.tcpEndpoint or null) == null
+      ) radio.meshtastic.device
+      ++ lib.optional rnode.enable rnode.port;
     assertions = [
+      {
+        assertion = !(rnode.enable && config.services.mesh-services.reticulum.enable);
+        message = "Use one shared Reticulum daemon; disable the legacy Mish RNode service.";
+      }
       {
         assertion =
           (radio.meshtastic.enable && radio.meshtastic.tcpEndpoint == null)

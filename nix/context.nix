@@ -13,12 +13,21 @@ let
   ];
   overlay = final: _prev: {
     mish-control = final.callPackage ../pkgs/mish-control { };
+    supply-drop-bbs = final.callPackage ../pkgs/supply-drop-bbs { };
+    retibbs = final.callPackage ../pkgs/retibbs { };
   };
   pkgsFor =
     system:
     import nixpkgs {
       inherit system;
       overlays = [ overlay ];
+      config.allowUnfreePredicate =
+        pkg:
+        builtins.elem (lib.getName pkg) [
+          "supply-drop-bbs"
+          "rns"
+          "lxmf"
+        ];
     };
 in
 {

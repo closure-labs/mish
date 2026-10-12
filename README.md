@@ -144,6 +144,13 @@ Nostr publication are development facilities. Those integrations and additional
 hardware profiles remain deferred; the
 [design history](docs/mish-design-history.md) explains the narrower direction.
 
+## Optional standalone BBS services
+
+The `mesh-services` NixOS module and Linux package exports provide Supply Drop
+(Meshtastic or standalone MeshCore BBS) and experimental Reticulum/RetiBBS.
+They use separate users, identities and state; they do not bridge Mish rooms or
+alerts. See [profiles, source pins, licenses and qualification](docs/optional-mesh-services.md).
+
 ## License
 
 Mish is licensed under the GNU Affero General Public License, version 3 only

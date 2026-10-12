@@ -178,6 +178,16 @@ lib.genAttrs linuxSystems (
           system
           ;
       };
+      mesh-services = import ./mesh-services-check.nix {
+        inherit
+          pkgs
+          lib
+          self
+          system
+          ;
+      };
+      retibbs = pkgs.retibbs;
+      supply-drop-bbs = pkgs.supply-drop-bbs;
       channel-selection =
         pkgs.runCommand "mish-channel-selection-check"
           {
@@ -376,6 +386,7 @@ lib.genAttrs linuxSystems (
           '';
     };
     x86Checks = lib.optionalAttrs (system == "x86_64-linux") {
+      mesh-services-vm = import ../tests/mesh-services.nix { inherit pkgs self; };
       vm-smoke = import ../tests/appliance.nix { inherit pkgs self; };
     };
   in
