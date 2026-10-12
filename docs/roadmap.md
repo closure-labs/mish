@@ -114,9 +114,10 @@ repeated acknowledgements.
 
 Shared Meshtastic channel membership permits transmission. The community
 channel is intentionally a participatory radio surface. The former read-only
-attendee announcement feed is superseded as the public product model; community
-browser writes remain a separate interface decision. Existing announcement
-routes do not substitute for channel enrollment. Radio access does not create
+attendee announcement feed is superseded as the public product model. Community
+participation uses the Meshtastic app; the public browser provides enrollment
+only. Existing announcement routes do not substitute for channel enrollment.
+Radio access does not create
 an authenticated staff web identity. Dedicated emergency dispatch procedures
 are outside this first release.
 
@@ -126,8 +127,9 @@ Use one community primary and private secondary channels, with eight total
 radio slots and names limited to 11 UTF-8 bytes. An event label may be longer:
 Astral Valley can use `AstralMesh` as its radio channel name. Generate full
 256-bit community keys and independent 32-byte keys for every private channel.
-Store secret material only in protected runtime state and authorized private
-enrollment artifacts, never shared images or public responses.
+Store keys in protected runtime state and enrollment artifacts, never shared
+images. Only the community key appears in public enrollment; private channel
+keys require authorized exports.
 
 Importing a single PRIMARY community URI preserves LoRa settings and opaque unknown
 configuration fields. Preview the intended slot layout before an explicit USB

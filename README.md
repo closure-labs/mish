@@ -47,9 +47,9 @@ settings, or generating an event configuration with full 256-bit keys. An
 operator explicitly provisions the USB radio and verifies readback; reconnect
 alone must not overwrite a radio's configuration. See the
 [channel enrollment design](docs/channel-enrollment.md) for group membership,
-QR scope, key rotation and acceptance gates. Community browser participation
-is a separate interface decision; public radio access does not grant staff
-browser access.
+QR scope, key rotation and acceptance gates. Community participation uses the
+Meshtastic app; the public browser provides enrollment QR codes. Public radio
+access does not grant staff browser access.
 
 ## One coordinator, a local network and staff radios
 

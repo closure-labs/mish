@@ -20,7 +20,7 @@ compiled appliance runtime contains no Python application package.
 | Compiled runtime closure | Passed | 10 store paths, including SQLite and stub shell wrappers; no Python runtime |
 | Repository queue helper | Passed | Nine tests after incorporating the GitHub App admission correction |
 | Native GitHub x86 and ARM checks | Passed on `1d7d68d` | [Checks run 38177392268](https://github.com/closure-labs/mish/actions/runs/38177392268), including the x86 VM |
-| Rust appliance images | Pending main image run | Follow [Images](https://github.com/closure-labs/mish/actions/workflows/images.yml); realization and physical qualification remain separate gates |
+| Rust appliance images | Passed for `e6cd187` | [Images run 38181091160](https://github.com/closure-labs/mish/actions/runs/38181091160) built both architectures; physical qualification remains open |
 
 The automatic admission correction merged in
 [PR #13](https://github.com/closure-labs/mish/pull/13). App registration,
@@ -150,5 +150,18 @@ channel selection and applying journal access filtering before its result
 limit. Keys and RF settings are checked on radio connection and reported
 configuration changes, not continuously against unreported external edits.
 Physical Meshtastic app QR import, USB firmware interoperability and RF
-communication remain unverified. Native GitHub qualification and queue evidence
-for this feature will be recorded against its committed revision.
+communication remain unverified.
+
+[Checks run 38185483836](https://github.com/closure-labs/mish/actions/runs/38185483836)
+passed both native architectures, all-system evaluation, the booted x86 VM and
+Software qualification for `b9ffef5` in
+[PR #18](https://github.com/closure-labs/mish/pull/18). The VM exercises the actual
+community enrollment landing page, channel-selection asset, anonymous private
+route rejection and separation of private messages from the public catalog.
+
+[Merge-group run 38186040176](https://github.com/closure-labs/mish/actions/runs/38186040176)
+passed all three required contexts, and PR #18 merged as `b4dec1c`. Queue
+admission used the authorized CLI path. The automatic admission workflow still
+requires `MISH_QUEUE_APP_ID` and `MISH_QUEUE_APP_PRIVATE_KEY`; its
+[configuration check](https://github.com/closure-labs/mish/actions/runs/38185948748)
+reported both absent. Native merge-group validation ran without bypassing gates.

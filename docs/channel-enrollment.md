@@ -144,10 +144,9 @@ web access/export; it does not invalidate a key previously copied to a radio.
 
 ## Browser and API contract
 
-The public landing page offers the community enrollment QR. Anonymous browser
-message writes are outside the selected default; participation happens through
-the enrolled Meshtastic channel. Public catalog/enrollment responses contain
-community configuration only. Authenticated staff see channels permitted by
+Community message participation uses the Meshtastic app. The public landing
+page provides community QR enrollment only. Public catalog/enrollment responses
+contain community configuration only. Authenticated staff see channels permitted by
 their membership and can obtain scoped enrollment for those channels.
 
 The selected routes are `GET /public/channels`,
@@ -204,8 +203,8 @@ Software and physical outcomes remain separate.
 - [ ] Record QR compatibility, firmware versions, commissioning time and operator
   interventions during the physical rehearsal.
 
-Community browser participation is a separate interface decision. The default
-draft keeps radio enrollment and the authenticated application separate;
-public radio membership does not grant private browser reads or writes. Earlier
-read-only attendee-feed assumptions do not define the community mesh's access
-model.
+Community participation uses the Meshtastic app. The public browser provides
+community QR enrollment; staff browser reads and writes require authentication
+and channel membership. Public radio membership does not grant private browser
+access. Earlier read-only attendee-feed assumptions do not define the community
+mesh's access model.
