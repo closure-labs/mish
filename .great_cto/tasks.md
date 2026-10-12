@@ -142,7 +142,8 @@ Physical hardware and field-pilot acceptance remain open.
 
 - [x] User scope: existing channel join or regional mesh creation, independent
   256-bit keys, stock Meshtastic enrollment QR codes; public radio participation
-  replaces the read-only attendee model. Default browser role is enrollment.
+  replaces the read-only attendee model. Confirmed community participation uses
+  the Meshtastic app only; the public browser provides QR enrollment.
 - [x] Architecture review: stable channel identities bind queued records;
   SQLite stores credentials and membership; native USB commissioning verifies
   readback, and reconnect never rewrites channels. Keys stay out of Nix/GitHub.
@@ -152,5 +153,12 @@ Physical hardware and field-pilot acceptance remain open.
   scoped journal fixes. Local behavioral checks: 68 Rust tests, seven Node 24
   browser-selection tests, strict Clippy and formatting passed. Four native
   USB fixtures exercise verified writes, wrong readback, disconnect and RF drift.
-- [ ] Independent security/QA and native GitHub qualification.
-- [ ] Merge queue delivery. Physical app/USB qualification remains open.
+- [x] Independent security/QA and native GitHub qualification: both native
+  architectures, the booted x86 VM and Software qualification passed for
+  `b9ffef5` in [run 38185483836](https://github.com/closure-labs/mish/actions/runs/38185483836).
+- [x] Merge queue delivery: all three required contexts passed in
+  [run 38186040176](https://github.com/closure-labs/mish/actions/runs/38186040176);
+  [PR #18](https://github.com/closure-labs/mish/pull/18) merged as `b4dec1c`.
+  Physical app/USB qualification remains open. Automatic queue admission still
+  awaits the documented GitHub App credentials; CLI admission exercised the
+  native queue without bypassing checks.
