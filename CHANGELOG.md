@@ -4,11 +4,45 @@ User-facing changes in Mish. `0.1.0-alpha` is the initial prerelease.
 
 ## Unreleased
 
+### Added
+
+- Offline attendee chat at `/public`: choose a nickname, join or leave rooms,
+  read retained history and send text. Rooms can stay on Wi-Fi or connect to a
+  verified Meshtastic community channel. Private mapped rooms remain limited
+  to authorized staff, and community radio QR enrollment stays available.
+- Separate, revocable guest sessions and operator controls to create or archive
+  rooms, hide messages, pause enrollment and set posting limits. Guest enrollment
+  is off until an operator enables it. See [community rooms](docs/community-rooms.md).
+- Durable room history with duplicate-safe submission retries and inclusion in
+  backup, restore, retention and wipe. Browser drafts survive reloads and
+  disconnects; reconnecting requires an explicit Send. Messages allow up to
+  160 UTF-8 bytes, including the author label when sent over radio.
+- Event-domain HTTPS using externally supplied certificates, plus an optional
+  TCP connection to `meshtasticd`. Local-CA HTTPS remains available and USB
+  Meshtastic remains the default. See [event connectivity](docs/event-connectivity.md).
+- Standalone Nix packages and services for Supply Drop BBS and experimental
+  Reticulum/RetiBBS, with separate state and identities. Examples cover dedicated
+  Meshtastic radios, a MeshCore-only BBS and a shared Reticulum daemon with optional
+  RNode hardware. These services can run independently of Mish; MeshCore does not
+  carry Mish rooms or alerts. See [optional mesh services](docs/optional-mesh-services.md)
+  for setup and upstream license requirements.
+
 ### Changed
 
+- Guest radio queues are bounded and staff transmissions take priority. Wi-Fi
+  activity does not consume radio airtime unless a room is explicitly mapped.
 - Mish now uses AGPLv3 only (`AGPL-3.0-only`). The repository, Rust crate,
   Nix package and future release kits include the license text. The immutable
   `v0.1.0-alpha` source and artifacts retain their earlier Apache-2.0 metadata.
+
+### Qualification
+
+Native x86/ARM checks, VM scenarios and appliance image builds passed. Separate
+[one-hour HTTP and Chromium tests](https://github.com/closure-labs/mish/actions/runs/38247261916)
+each supported 50 concurrent sessions and 3,600 messages, with no accepted-message
+loss and updates visible within five seconds. This measures local chat capacity,
+not radio throughput. Physical iOS/Android, event certificate/DNS and radio
+acceptance remain open; use the [acceptance record](docs/acceptance.md).
 
 ## [0.1.0-alpha] — 2026-10-11
 
