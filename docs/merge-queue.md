@@ -27,21 +27,22 @@ by [PR #24](https://github.com/closure-labs/mish/pull/24) with all three require
 merge-group contexts passing. This does not automatically enable auto-merge
 on every newly opened PR.
 
-## Optional future path: unattended App admission
+## Optional future path: dispatched App admission
 
 The App workflow is disabled unless repository variable
 `MISH_QUEUE_APP_AUTOMATION` is exactly `true`. Leave it unset for the current
-path. With automation deferred, the workflow skips its admission job and does
-not request missing App credentials.
+path. The **Optional App queue admission** workflow runs only when explicitly
+dispatched. Completing Checks does not trigger it. A manual dispatch without
+the opt-in variable skips admission and does not request App credentials.
 
-When explicitly enabled, the Merge queue workflow runs trusted `main` automation after a successful PR
-Checks run. It admits open, non-draft PRs from this repository's branches,
+When explicitly enabled and dispatched, it runs trusted `main` automation.
+It admits open, non-draft PRs from this repository's branches,
 including Dependabot, only after both current-head native jobs and the aggregate software gate pass. Stale
 heads, conflicts, missing/failed checks and required-review blockers wait.
 External fork admission remains an explicit maintainer action. Turning a
 draft into a ready PR triggers Checks again.
 Maintenance input updates are created as drafts so the operator reviews them
-before marking them ready for Checks and automatic queue admission.
+before marking them ready for Checks and queue admission.
 
 Enqueue uses the expected PR head SHA so a new push cannot silently substitute
 untested content. The workflow never checks out PR code or downloads PR
@@ -59,7 +60,7 @@ dispatch or writes synthetic successful checks. Later queue entries wait for
 the preceding group. Missing credentials fail before queue admission, and a
 missing native event produces an actionable failure after a bounded wait.
 
-Configure the App before enabling unattended admission:
+Configure the App before using this optional admission helper:
 
 1. An organization owner registers a private GitHub App for `closure-labs`.
    `.github/merge-queue-app-manifest.json` records the registration settings:
@@ -80,8 +81,8 @@ Configure the App before enabling unattended admission:
    ```
 
 4. Set repository variable `MISH_QUEUE_APP_AUTOMATION` to `true` only when
-   unattended admission is wanted and the App credentials are configured.
-   Dispatch Merge queue and verify a native `merge_group` Checks run appears
+   App admission is wanted and the App credentials are configured.
+   Dispatch Optional App queue admission and verify a native `merge_group` Checks run appears
    on the queue commit. Both required architecture jobs must pass before the
    queue merges it. An entry originally admitted with `GITHUB_TOKEN` may need
    a maintainer to remove it from the queue and admit it again with App or
@@ -92,7 +93,7 @@ the token, scoped to the repository by owner and repository name. Rotate the
 private key by replacing the secret and deleting the old key after validating
 the new token. Neither an App nor its credentials is created automatically;
 registration, installation, credentials and explicit opt-in are prerequisites
-only for this optional unattended path.
+only for this optional dispatched path.
 No personal access token is stored by this workflow.
 
 This follows GitHub's [workflow triggering rules](https://docs.github.com/en/actions/how-tos/write-workflows/choose-when-workflows-run/trigger-a-workflow)
@@ -118,3 +119,19 @@ nix develop --command env GITHUB_REPOSITORY=closure-labs/mish python .github/scr
 
 Queue results do not publish releases. Tagged release automation continues to
 produce drafts; image builds and physical acceptance remain distinct gates.
+
+## Understanding skipped runs
+
+Required queue validation appears under **Checks** with event `merge_group`.
+Its x86, ARM and **Software qualification** jobs must all succeed. The
+aggregate gate rejects skipped, cancelled, failed or missing prerequisites.
+The optional admission helper is not a required check and does not validate
+the combined queue commit.
+
+Earlier **Merge queue** runs automatically triggered after Checks and skipped
+the App job while setup was deferred. Those historical skipped runs remain
+visible. For example, [run 38200927727](https://github.com/closure-labs/mish/actions/runs/38200927727)
+skipped optional admission, while the actual
+[merge-group run 38200125296](https://github.com/closure-labs/mish/actions/runs/38200125296)
+passed all required jobs and merged PR #25. The helper now has a distinct name
+and no automatic trigger, so routine validation produces no admission runs.

@@ -98,7 +98,10 @@ The owner confirmed the current merge-queue ruleset and deferred GitHub App
 setup. Native per-PR auto-merge through the maintainer's GitHub session is the
 current admission path; it has exercised native merge-group checks without
 bypassing the ruleset. App-based unattended admission is optional and disabled
-unless `MISH_QUEUE_APP_AUTOMATION` is explicitly set to `true`.
+unless `MISH_QUEUE_APP_AUTOMATION` is explicitly set to `true` and the
+**Optional App queue admission** workflow is manually dispatched. Required
+native queue validation runs under **Checks** on `merge_group`; completion
+does not trigger optional admission.
 
 Release workflows create drafts and retain versioned artifacts and checksums.
 Physical acceptance remains open, so event use remains unqualified.

@@ -1,8 +1,5 @@
-name: Merge queue
+name: Optional App queue admission
 on:
-  workflow_run:
-    workflows: [Checks]
-    types: [completed]
   workflow_dispatch:
 permissions:
   contents: read
@@ -11,11 +8,7 @@ concurrency:
   cancel-in-progress: false
 jobs:
   enqueue:
-    if: >-
-      vars.MISH_QUEUE_APP_AUTOMATION == 'true' &&
-      (github.event_name == 'workflow_dispatch' ||
-       (github.event.workflow_run.conclusion == 'success' &&
-        github.event.workflow_run.event == 'pull_request'))
+    if: vars.MISH_QUEUE_APP_AUTOMATION == 'true'
     runs-on: ubuntu-24.04
     timeout-minutes: 10
     steps:
