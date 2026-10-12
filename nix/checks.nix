@@ -45,10 +45,11 @@ lib.genAttrs linuxSystems (
       { services.mish.radio.meshtastic.device = "/dev/serial/by-id/test-operator-radio"; }
     ];
     wrongArchitectureConfig = rejectedMode [
+      { nixpkgs.hostPlatform = system; }
       (if system == "x86_64-linux" then self.nixosModules.mish-aarch64 else self.nixosModules.mish-x86_64)
     ];
     rejects =
-      config: message: lib.any (entry: !entry.assertion && entry.message == message) config.assertions;
+      config: message: lib.any (entry: entry.message == message && !entry.assertion) config.assertions;
     invalidMatrixConfig =
       (lib.nixosSystem {
         inherit system;

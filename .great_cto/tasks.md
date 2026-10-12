@@ -187,4 +187,8 @@ Physical hardware and field-pilot acceptance remain open.
   rejection assertions. Bounded local package/export inventories, one x86
   host and one simulation/state-version projection passed.
 - [ ] Native software, VM, image and merge-group qualification for this revision.
+  Initial GitHub qualification caught an omitted platform in the standalone
+  wrong-architecture test fixture. The fixture now supplies the platform that
+  Den supplies on real hosts; a bounded rejection projection passed. Production
+  assertions and fail-closed workflow gates remain intact.
 - [ ] Commit, push and merge queue delivery. Physical deployment remains open.
