@@ -94,12 +94,11 @@ Physical milestone status remains unchanged.
    unacknowledged alerts, congestion, memory, storage growth, power and operator
    intervention. Use the [acceptance record](acceptance.md) for each candidate.
 
-Automatic queue admission has a separate repository configuration dependency:
-the last recorded check reported `MISH_QUEUE_APP_ID` and
-`MISH_QUEUE_APP_PRIVATE_KEY` absent. Authorized CLI admission has exercised the
-native merge queue without bypassing required checks. Provision and verify
-the repository-scoped GitHub App to complete automatic admission; this does
-not block radio qualification or change appliance runtime behavior.
+The owner confirmed the current merge-queue ruleset and deferred GitHub App
+setup. Native per-PR auto-merge through the maintainer's GitHub session is the
+current admission path; it has exercised native merge-group checks without
+bypassing the ruleset. App-based unattended admission is optional and disabled
+unless `MISH_QUEUE_APP_AUTOMATION` is explicitly set to `true`.
 
 Release workflows create drafts and retain versioned artifacts and checksums.
 Physical acceptance remains open, so event use remains unqualified.

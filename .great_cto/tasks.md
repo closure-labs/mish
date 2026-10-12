@@ -264,3 +264,19 @@ Hardware commissioning, RF testing and field rehearsal remain unperformed.
 - [x] Bounded local verification: 27 helper tests passed, Cargo reports
   `AGPL-3.0-only`, and pinned Nixpkgs exposes the matching `agpl3Only` license.
   Native package/VM/image verification follows the updated GitHub revision.
+
+Native [Checks 38197777881](https://github.com/closure-labs/mish/actions/runs/38197777881)
+and [Images 38197832073](https://github.com/closure-labs/mish/actions/runs/38197832073)
+passed for licensing revision `3a311ab`. All three required contexts passed in
+[merge-group 38198511486](https://github.com/closure-labs/mish/actions/runs/38198511486);
+[PR #24](https://github.com/closure-labs/mish/pull/24) merged as `07e5ab3`.
+
+## Native queue default and deferred App setup
+
+- [x] Owner confirmed the current ruleset and stated that no GitHub App setup
+  is needed for now. Keep the ruleset and required contexts unchanged.
+- [x] Current path: native per-PR auto-merge using the authenticated maintainer
+  session; no App or repository token secret is required.
+- [x] Make unattended App admission opt-in with `MISH_QUEUE_APP_AUTOMATION`.
+  When unset, its workflow skips admission instead of requesting credentials.
+  Existing App code remains available for an explicitly enabled future path.

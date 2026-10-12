@@ -269,3 +269,22 @@ draft-preparation state.
 
 No images were rebuilt or physically booted during publication. Physical M2–M5
 acceptance remains open.
+
+## AGPLv3 package and artifact qualification
+
+[PR #24](https://github.com/closure-labs/mish/pull/24) changes subsequent Mish
+revisions to `AGPL-3.0-only`. Canonical GNU AGPLv3 text is byte-identical in the
+repository and crate LICENSE files. Cargo and pinned Nixpkgs metadata agree;
+the Nix package installs the license and future image/release kits include it
+before checksums are generated. Third-party notices are unchanged.
+
+Bounded local verification passed 27 helper tests and checked Cargo metadata,
+the pinned Nix license identifier and both license copies. Independent
+infrastructure, security and QA reviews approved. [Checks 38197777881](https://github.com/closure-labs/mish/actions/runs/38197777881)
+and [Images 38197832073](https://github.com/closure-labs/mish/actions/runs/38197832073)
+passed both architectures, the x86 VM gate and image realization for `3a311ab`.
+[Merge-group 38198511486](https://github.com/closure-labs/mish/actions/runs/38198511486)
+passed all three required contexts; PR #24 merged as `07e5ab3`.
+
+The already-published immutable `v0.1.0-alpha` source and assets retain their
+earlier Apache-2.0 metadata. No published tag or asset was rewritten.

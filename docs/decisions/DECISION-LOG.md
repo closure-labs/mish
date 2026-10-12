@@ -27,3 +27,21 @@ code require a new release version.
 
 **Related:** [Release qualification](https://github.com/closure-labs/mish/actions/runs/38193676481),
 [alpha notes](../releases/v0.1.0-alpha.md), [physical acceptance](../acceptance.md).
+
+## D-0002 — 2026-10-11 — Keep native queue rules and defer App setup
+
+**Context:** The current merge queue and native checks have admitted and merged
+maintainer PRs through native per-PR auto-merge. Unattended workflow admission
+was designed around a separately configured GitHub App.
+
+**Decision:** The owner confirmed the current merge-queue ruleset and deferred
+App setup. Use native per-PR auto-merge with the maintainer's existing GitHub
+session. Make App-based unattended admission explicitly opt-in and inactive
+without `MISH_QUEUE_APP_AUTOMATION=true`.
+
+**Reversible:** Yes. Configure and explicitly enable the optional App workflow
+later if unattended admission is wanted.
+
+**Owner:** @cto
+
+**Related:** [Queue operation](../merge-queue.md), [PR #24](https://github.com/closure-labs/mish/pull/24).

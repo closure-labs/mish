@@ -1,4 +1,4 @@
-# Automatic pull request queueing
+# Native pull request queueing
 
 Main requires pull requests, both native Checks jobs and Software qualification from GitHub Actions and
 an ALLGREEN merge queue. The active repository ruleset is `24893052`; its
@@ -6,7 +6,35 @@ configuration is recorded in `.github/merge-queue-rules.json`. One queue group
 builds at a time, and its combined commit must pass the same x86 and ARM
 checks before GitHub merges it. There are no bypass actors.
 
-The Merge queue workflow runs trusted `main` automation after a successful PR
+## Current path: per-PR auto-merge
+
+The owner confirmed the current ruleset and deferred App setup. Use GitHub's
+native queue with an authenticated maintainer session. Enable auto-merge for
+each reviewed PR; GitHub waits for the required PR checks, admits it to the
+queue and runs native merge-group validation before merging.
+
+For example, replace `24` and `FULL_PR_HEAD_SHA` with the intended PR and its
+current full commit SHA:
+
+```bash
+nix develop --command gh pr merge 24 --auto --match-head-commit FULL_PR_HEAD_SHA
+```
+
+The expected head protects against admitting a changed revision. Failed checks,
+conflicts and review blockers still wait. No App or workflow credential setup
+is required for this maintainer-driven path. Native auto-merge was exercised
+by [PR #24](https://github.com/closure-labs/mish/pull/24) with all three required
+merge-group contexts passing. This does not automatically enable auto-merge
+on every newly opened PR.
+
+## Optional future path: unattended App admission
+
+The App workflow is disabled unless repository variable
+`MISH_QUEUE_APP_AUTOMATION` is exactly `true`. Leave it unset for the current
+path. With automation deferred, the workflow skips its admission job and does
+not request missing App credentials.
+
+When explicitly enabled, the Merge queue workflow runs trusted `main` automation after a successful PR
 Checks run. It admits open, non-draft PRs from this repository's branches,
 including Dependabot, only after both current-head native jobs and the aggregate software gate pass. Stale
 heads, conflicts, missing/failed checks and required-review blockers wait.
@@ -51,7 +79,9 @@ Configure the App before enabling unattended admission:
    nix develop --command gh secret set MISH_QUEUE_APP_PRIVATE_KEY --repo closure-labs/mish < /secure/path/queue-app.pem
    ```
 
-4. Dispatch Merge queue and verify a native `merge_group` Checks run appears
+4. Set repository variable `MISH_QUEUE_APP_AUTOMATION` to `true` only when
+   unattended admission is wanted and the App credentials are configured.
+   Dispatch Merge queue and verify a native `merge_group` Checks run appears
    on the queue commit. Both required architecture jobs must pass before the
    queue merges it. An entry originally admitted with `GITHUB_TOKEN` may need
    a maintainer to remove it from the queue and admit it again with App or
@@ -61,7 +91,8 @@ The workflow requests the same limited permissions explicitly when minting
 the token, scoped to the repository by owner and repository name. Rotate the
 private key by replacing the secret and deleting the old key after validating
 the new token. Neither an App nor its credentials is created automatically;
-registration, installation, and the two configuration values are prerequisites.
+registration, installation, credentials and explicit opt-in are prerequisites
+only for this optional unattended path.
 No personal access token is stored by this workflow.
 
 This follows GitHub's [workflow triggering rules](https://docs.github.com/en/actions/how-tos/write-workflows/choose-when-workflows-run/trigger-a-workflow)
@@ -69,8 +100,9 @@ and [GitHub App workflow authentication](https://docs.github.com/en/apps/creatin
 GitHub's [merge queue documentation](https://docs.github.com/en/enterprise-cloud@latest/repositories/configuring-branches-and-merges-in-your-repository/configuring-pull-request-merges/managing-a-merge-queue)
 requires checks triggered by the native merge group event.
 
-For an already-passing PR waiting on a review or a previously removed queue
-entry, dispatch Merge queue after resolving the blocker. A failed combined
+For the optional enabled App path, an already-passing PR waiting on a review or
+a previously removed queue entry can use workflow dispatch after resolving the
+blocker. A failed combined
 queue build needs investigation before requeueing; the workflow does not
 continually retry it on a schedule.
 
