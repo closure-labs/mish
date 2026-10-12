@@ -10,6 +10,7 @@ let
 in
 {
   imports = [
+    ../mesh-services
     ./control.nix
     ./den.nix
     ./geopack.nix

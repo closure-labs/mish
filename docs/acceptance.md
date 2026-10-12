@@ -33,7 +33,8 @@ Record command, architecture and pass/fail result separately for:
 - [ ] Disconnect WAN before enrollment and first message.
 - [ ] Join an existing primary community channel or generate the regional mesh; deploy and verify the coordinator's private staff/department channels.
 - [ ] Verify stable USB path and explicit service permissions.
-- [ ] Trust local CA on two staff devices; enroll distinct staff identities.
+- [ ] Verify event-local DNS, system time, hostname and certificate lifetime with WAN disconnected. Record external certificate provisioning or explicit local-CA trust on each test device.
+- [ ] Enroll distinct staff identities on two staff devices.
 - [ ] Exchange browser text; create alert with owner and expiry; acknowledge as another staff member.
 - [ ] Two physical radios exchange text through the adapter and send `ACK <ID>` with recorded node/channel provenance.
 - [ ] Public QR enrolls two community radios that exchange text without WAN; its decoded configuration contains no private keys.
@@ -82,3 +83,36 @@ than assuming targets were met.
 Do not advertise RF coverage, latency, physical installation success or recovery
 readiness until the corresponding measurements and procedures above have been
 completed on the release revision.
+
+## Attendee rooms
+
+- Browser/device models and versions (include iOS Safari and Android Chrome):
+- Event hostname, certificate expiry and trust method (omit private keys):
+- Exact software revision, HTTP soak artifact and browser test logs:
+
+- [ ] Enable guest chat explicitly; verify upgrades leave it disabled by default.
+- [ ] With WAN disconnected, enroll a nickname, join/leave rooms and read retained history on both phone platforms.
+- [ ] Verify Wi-Fi-only text never transmits; exchange mapped-room text with a stock Meshtastic client and verify no echoes.
+- [ ] Verify private-room invisibility, session revocation and message hiding from an attendee browser.
+- [ ] Preserve a draft across disconnect/reload and require an explicit Send after reconnect.
+- [ ] Run 50 concurrent sessions at one aggregate message per second for one hour; record all 3,600 accepted messages and per-client visibility within five seconds. Keep HTTP load evidence separate from real-browser rendering evidence.
+- [ ] Saturate the guest radio queue while confirming staff alerts retain capacity; record RF delivery separately from local browser latency.
+- [ ] Restart, restore and exercise retention/wipe with guest sessions and room history present.
+
+## Optional hardware profiles
+
+Copy this section separately for meshtasticd, Supply Drop/Meshtastic,
+Supply Drop/MeshCore and Reticulum/RNode. A passed profile does not qualify
+another radio protocol or Mish room transport over MeshCore.
+
+- Profile, exact package/source revision and native architecture:
+- Dedicated device path, hardware/firmware and region/modem settings (omit keys):
+- Native package/VM evidence links:
+- Operator, date and physical test logs:
+
+- [ ] Record physical text exchange using the profile's supported client.
+- [ ] Disconnect/reconnect and restart; verify identity and board persistence.
+- [ ] Confirm exclusive hardware ownership and local administration listeners.
+- [ ] Stop/fail the optional service and verify Mish staff coordination remains available.
+- [ ] For Reticulum, verify the shared daemon exclusively owns the RNode and BBS clients reconnect to it.
+- [ ] Back up and restore independent service state separately from Mish.

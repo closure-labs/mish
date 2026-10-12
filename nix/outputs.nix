@@ -14,6 +14,7 @@ in
 {
   overlays.default = context.overlay;
   nixosModules.mish = ../modules/nixos/mish;
+  nixosModules.mesh-services = ../modules/nixos/mesh-services;
 
   packages = forAllSystems (
     system:
@@ -39,6 +40,9 @@ in
       mish-control = pkgs.mish-control;
     }
     // lib.optionalAttrs (builtins.elem system linuxSystems) {
+      supply-drop-bbs = pkgs.supply-drop-bbs;
+      retibbs = pkgs.retibbs;
+      reticulum = pkgs.rns;
       mish-validation = import ./validation.nix {
         inherit pkgs system;
         checks = self.checks.${system};
