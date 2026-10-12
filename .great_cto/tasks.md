@@ -186,9 +186,17 @@ Physical hardware and field-pilot acceptance remain open.
   composition tests cover valid modes and specific device/mode/architecture
   rejection assertions. Bounded local package/export inventories, one x86
   host and one simulation/state-version projection passed.
-- [ ] Native software, VM, image and merge-group qualification for this revision.
+- [x] Native software, VM, image and merge-group qualification: candidate
+  `8b90573` passed Checks
+  [38189634053](https://github.com/closure-labs/mish/actions/runs/38189634053)
+  and Images [38189631186](https://github.com/closure-labs/mish/actions/runs/38189631186).
+  All three queue contexts passed in
+  [38190366390](https://github.com/closure-labs/mish/actions/runs/38190366390).
   Initial GitHub qualification caught an omitted platform in the standalone
   wrong-architecture test fixture. The fixture now supplies the platform that
   Den supplies on real hosts; a bounded rejection projection passed. Production
   assertions and fail-closed workflow gates remain intact.
-- [ ] Commit, push and merge queue delivery. Physical deployment remains open.
+- [x] Commit, push and merge queue delivery:
+  [PR #20](https://github.com/closure-labs/mish/pull/20) merged as `8381b5f`.
+  Physical deployment remains open. Status/evidence closeout changes are
+  documentation only and follow the same required checks.

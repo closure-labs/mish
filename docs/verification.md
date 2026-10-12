@@ -20,8 +20,8 @@ It does not demonstrate a fully provisioned radio mesh.
 passed on `b4dec1c` for x86 VM/installer and ARM SD artifacts. Mish has never
 been deployed; physical Meshtastic app import, USB/RF operation, fresh-kit
 commissioning, Pi 4 qualification and rehearsal remain unperformed. The Den
-composition refactor is pending its own native software, VM, queue and image
-qualification. See [product status](product-status.md) and
+composition refactor passed native software/VM and image qualification for
+`8b90573`; see the Den evidence below, [product status](product-status.md) and
 [Den architecture](den-architecture.md).
 
 The last recorded automatic queue configuration check found the GitHub App
@@ -194,3 +194,32 @@ then passed for merged feature revision `b4dec1c`, realizing the x86 VM and
 installer plus the ARM SD image. [PR #19](https://github.com/closure-labs/mish/pull/19)
 merged the documentation follow-up as `a4660ac`. Neither result closes the
 physical channel-enrollment or event-kit gates.
+
+## Den composition qualification
+
+[PR #20](https://github.com/closure-labs/mish/pull/20) replaces direct host
+construction with Den host/aspect composition. Den is pinned to the reviewed
+reference revision `65c9fd40e958109f5a352c1a93ae8254bf1ed29f`. Existing public
+output names and platform-specific settings remain; reusable modes preserve an
+explicit host state version. The Rust application and database are unchanged.
+
+[Checks run 38189634053](https://github.com/closure-labs/mish/actions/runs/38189634053)
+passed all-system evaluation, both native Linux checks and Software
+qualification for `8b90573`. The booted VM now imports the actual Den simulation
+mode. Composition checks verify shipped defaults, state-version preservation
+and the specific rejection assertions for placeholder/unstable devices, mixed
+radio modes and wrong architecture. Initial qualification exposed an omitted
+platform in the standalone architecture fixture; the fixture was corrected
+without changing the production guard.
+
+[Images run 38189631186](https://github.com/closure-labs/mish/actions/runs/38189631186)
+passed x86 VM/installer and ARM SD realization plus Image qualification for
+the same revision. Code, QA and security reviews approved. Local checks used
+the one-job/2 GiB scope and targeted exports/configuration projections; full
+evaluation, VM and image builds ran on GitHub. Physical M2–M5 acceptance remains
+open.
+
+[Merge-group run 38190366390](https://github.com/closure-labs/mish/actions/runs/38190366390)
+passed both native contexts and Software qualification for the combined commit.
+PR #20 merged as `8381b5f`; image evidence above remains attributed to its
+qualified candidate `8b90573`.

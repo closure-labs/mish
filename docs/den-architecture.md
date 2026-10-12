@@ -108,7 +108,7 @@ realization, x86 VM integration and image builds run on GitHub. Successful
 software and image qualification establish the refactor's build behavior;
 they do not close M2–M5 physical gates.
 
-The pre-refactor source is `a4660ac`. Reverting the composition commit restores
-that flake; no application database or credential migration is introduced.
+The pre-refactor source is `a4660ac`. Restoring that source restores the prior
+flake; no application database or credential migration is introduced.
 There is no deployed appliance to update. Production installation and immutable
 release publication still require the recorded physical acceptance.

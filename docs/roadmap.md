@@ -101,8 +101,9 @@ acceptance evidence is recorded.
 
 M0 and M1 software gates have passed. M2 and M3 have implemented software;
 M4 has realized ARM artifacts. M2–M5 physical gates remain open, and Mish has
-never been deployed. Native checks and images must be qualified again for the
-Den restructuring revision; earlier results do not establish that change.
+never been deployed. The Den refactor's native software, VM and image gates
+passed for `8b90573`; see [product status](product-status.md) for revision-specific
+evidence. Required checks still run on each candidate and release revision.
 
 ## Alert semantics
 

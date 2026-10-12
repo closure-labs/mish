@@ -26,18 +26,30 @@ source revisions.
 | Native software qualification | Both architectures and all three required merge-group contexts passed for PR #18 | ARM native builds do not establish Pi 4 boot or USB support |
 | x86 VM application integration | Trusted HTTPS, authenticated text/alert ACK, restart and snapshot recovery passed; enrollment page and protected routes exercised | The channel catalog is empty in this VM scenario; it does not exercise a fully provisioned event mesh |
 | Event-kit image realization | [Images run 38186639291](https://github.com/closure-labs/mish/actions/runs/38186639291) passed on `b4dec1c`, building x86 VM/installer and ARM SD artifacts | Image realization does not establish physical installation, boot, RF or recovery |
-| Den aspect restructuring | In progress; qualification pending | Existing results validate their recorded source revisions; the refactored outputs need their own native checks and image evidence |
+| Den aspect restructuring | Native software, Den-composed VM and image qualification passed for `8b90573` in [PR #20](https://github.com/closure-labs/mish/pull/20) | Build qualification does not close physical gates |
 
 The [Den architecture](den-architecture.md) describes the composition change.
 Its gate is preservation of the public flake, NixOS module, application and
 image interfaces with the same application behavior.
+
+[Den Checks run 38189634053](https://github.com/closure-labs/mish/actions/runs/38189634053)
+passed both native architectures and Software qualification.
+[Den Images run 38189631186](https://github.com/closure-labs/mish/actions/runs/38189631186)
+passed both architecture builds and Image qualification. The new composition
+checks cover shipped defaults, reusable state-version preservation and specific
+invalid-device, mixed-radio and wrong-architecture rejection paths.
+
+All three required contexts passed in
+[Den merge-group run 38190366390](https://github.com/closure-labs/mish/actions/runs/38190366390).
+PR #20 merged as `8381b5f`. The composition refactor is delivered; the remaining
+product acceptance work below requires hardware and field evidence.
 
 ## Milestone status
 
 | Milestone | Status | Evidence still required |
 |---|---|---|
 | M0 baseline and CI | Software complete | Keep security regressions and native required checks passing on each candidate |
-| M1 x86 proof of concept | Software complete | Preserve the demonstrated VM behavior through the Den change |
+| M1 x86 proof of concept | Software complete | Maintain the demonstrated VM gate on future candidates |
 | M2 real mesh | Software implemented; physical gate open | Stock-app QR import, verified USB readback and community/private RF text and ACKs without WAN |
 | M3 event kit | Software components implemented; acceptance open | M2 acceptance, fresh x86 install using the runbook, commissioning time and physical recovery/resilience |
 | M4 ARM qualification | ARM artifacts realized; physical gate open | M3 acceptance and Pi 4 with 4 GB RAM commissioning/resilience |
@@ -45,23 +57,20 @@ image interfaces with the same application behavior.
 
 ## Next work in dependency order
 
-1. Finish and qualify Den composition. Preserve existing output names and
-   runtime behavior; pass native x86/ARM software qualification, the x86 VM,
-   merge-group checks and image realization against the refactored revision.
-2. Qualify the x86 radio path on named hardware. Record Meshtastic app and
+1. Qualify the x86 radio path on named hardware. Record Meshtastic app and
    firmware versions, community/private QR scope, USB provisioning/readback,
    channel isolation, text/ACK exchange and disconnect/reconnect without WAN.
-3. Validate the fresh x86 event kit. Follow commissioning from installation
+2. Validate the fresh x86 event kit. Follow commissioning from installation
    media, measure against the 30-minute target, then exercise reboot, power
    interruption, backup/spare recovery, rollback and direct radio communication
    while the coordinator is stopped. Correct the runbook from observations.
-4. Qualify Pi 4 after the x86 kit passes. The current profile imports the generic
+3. Qualify Pi 4 after the x86 kit passes. The current profile imports the generic
    aarch64 SD-image module and disables redistributable firmware. Verify the
    resulting boot/firmware, console or SSH access, Ethernet and USB on Pi 4;
    those settings are qualification questions, not evidence of a known
    regression. Complete the same commissioning and resilience checks on 4 GB
    hardware.
-5. Run the eight-hour pilot after both kit gates pass. Measure delivery latency,
+4. Run the eight-hour pilot after both kit gates pass. Measure delivery latency,
    unacknowledged alerts, congestion, memory, storage growth, power and operator
    intervention. Use the [acceptance record](acceptance.md) for each candidate.
 
