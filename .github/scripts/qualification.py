@@ -140,7 +140,7 @@ def changed_paths(event_name, event):
         return None
 
 
-def verify_artifacts(directory, revision, lock_bytes):
+def verify_artifacts(directory, revision, lock_bytes, cargo_bytes):
     systems = {'x86_64-linux', 'aarch64-linux'}
     if {path.name for path in directory.iterdir()} != {f'images-{system}' for system in systems}:
         raise ValueError('both native image artifacts are required')
@@ -170,6 +170,27 @@ def verify_artifacts(directory, revision, lock_bytes):
             raise ValueError('validation revision differs from tagged revision')
         if (artifact / 'flake.lock').read_bytes() != lock_bytes:
             raise ValueError('image lockfile differs from tagged lockfile')
+        if (artifact / 'Cargo.lock').read_bytes() != cargo_bytes:
+            raise ValueError('image Cargo lockfile differs from tagged lockfile')
+        targets = ({'mish-mini-pc-image', 'mish-mini-pc-installer'}
+                   if system == 'x86_64-linux' else {'mish-rpi4-image'})
+        build_manifest = {}
+        for line in (artifact / 'build-manifest.txt').read_text().splitlines():
+            target, output = line.split()
+            if target in build_manifest or not output.startswith('/nix/store/'):
+                raise ValueError('invalid image build manifest')
+            build_manifest[target] = output
+        if set(build_manifest) != targets:
+            raise ValueError('missing or unexpected image targets')
+        payloads = [path for path in files if path.stat().st_size > 0]
+        if system == 'x86_64-linux':
+            required = [any(path.name.endswith('.iso') for path in payloads),
+                        any(path.name == f'mish-mini-pc-image-{system}.nar.gz' for path in payloads)]
+        else:
+            required = [any(path.name.endswith(('.img', '.img.zst', '.img.bz2', '.img.gz'))
+                            for path in payloads)]
+        if not all(required):
+            raise ValueError('missing or empty required image payload')
         manifest = json.loads((artifact / 'validation-manifest.json').read_text())
         if manifest['system'] != system or manifest['lockHash'] != hashlib.sha256(lock_bytes).hexdigest():
             raise ValueError('validation identity differs from image target')
@@ -188,7 +209,8 @@ def main():
         return
     if args.artifact_root:
         revision = subprocess.check_output(['git', 'rev-parse', 'HEAD'], text=True).strip()
-        verify_artifacts(args.artifact_root, revision, (args.root / 'flake.lock').read_bytes())
+        verify_artifacts(args.artifact_root, revision, (args.root / 'flake.lock').read_bytes(),
+                         (args.root / 'apps/mish/Cargo.lock').read_bytes())
         print('Both downloaded image artifacts match checksums, architecture, revision and lockfile.')
         return
     if args.results is not None:

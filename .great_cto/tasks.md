@@ -200,3 +200,27 @@ Physical hardware and field-pilot acceptance remain open.
   [PR #20](https://github.com/closure-labs/mish/pull/20) merged as `8381b5f`.
   Physical deployment remains open. Status/evidence closeout changes are
   documentation only and follow the same required checks.
+
+## Initial alpha release preparation
+
+- [x] User scope: use the changelog-generator skill and prepare the first alpha.
+  Preserve `0.1.0-alpha` across Cargo and Nix; publication and physical deployment
+  remain outside this draft preparation.
+- [x] Changelog specialist: summarize delivered features, prototype interface
+  changes, recovery fixes and physical limitations from the Git history.
+- [x] Infrastructure review: identify missing prerelease/curated notes/version
+  guards and interrupted-upload handling in the existing release helper.
+- [x] Implementation: matching tag/version/notes, exact source, both lockfiles,
+  actual image payload/target checks, isolated upload staging, aggregate checksums
+  and same-source draft-only reruns. No publication operation is introduced.
+- [x] Bounded local QA: 27 repository-helper tests passed, including release
+  rejection, checksum coverage and interrupted-draft behavior. Full native
+  checks, workflow lint, VM and image builds run in GitHub.
+- [x] Independent infrastructure, security and QA release review approved.
+  Added upload-failure coverage, explicit draft retention and final identity
+  verification; seven release-helper tests passed after the final adjustment.
+- [ ] Commit, PR and native merge-group qualification.
+- [ ] Annotated initial alpha tag and successful tagged draft workflow.
+
+The draft must retain its exact source and validation run. Physical M2–M5
+acceptance remains open before any later publication decision.

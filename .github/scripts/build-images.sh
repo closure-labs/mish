@@ -19,6 +19,8 @@ for target in "${image_targets[@]}"; do
 done
 git rev-parse HEAD > artifacts/source-revision.txt
 cp flake.lock artifacts/flake.lock
+cp apps/mish/Cargo.lock artifacts/Cargo.lock
+cp CHANGELOG.md artifacts/
 cp docs/commissioning.md docs/operator-runbook.md docs/acceptance.md docs/roadmap.md artifacts/
 tar -czf artifacts/operating-docs.tar.gz docs
 cd artifacts

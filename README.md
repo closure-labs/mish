@@ -118,6 +118,11 @@ delivery-state boundaries.
 
 ## Readiness and scope
 
+The initial `v0.1.0-alpha` draft is described in the
+[changelog](CHANGELOG.md) and [alpha notes](docs/releases/v0.1.0-alpha.md).
+See [release preparation](docs/building-alpha.md#preparing-a-tagged-alpha) for
+the checks required before creating a draft.
+
 Native x86 and ARM checks, image realization and booted x86 VM application tests
 passed for the earlier revisions recorded in the
 [verification log](docs/verification.md). The enrollment suite has 68 passing

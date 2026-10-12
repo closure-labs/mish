@@ -69,3 +69,45 @@ those checksums before flashing. A draft tagged release must rebuild from its
 tag and include commissioning instructions. Record any skipped or blocked
 build/VM check explicitly; do not describe evaluation-only verification as a
 successful image build.
+
+## Preparing a tagged alpha
+
+The initial candidate is `v0.1.0-alpha`, matching the Rust manifest, Cargo
+lockfile and Nix package version. Update [CHANGELOG.md](../CHANGELOG.md) and
+the corresponding file under `docs/releases/` together. Native flake checks
+exercise release-helper regressions; the tagged qualifier also refuses a
+version mismatch or missing notes before building images.
+
+Commit and merge the candidate through the required native checks and merge
+queue. From that exact clean main revision, create an annotated tag and push
+it once; do not move a release tag to repair a candidate. If source changes
+are needed, prepare a new prerelease version and tag.
+
+```bash
+bash scripts/local-nix.sh --command python .github/scripts/release_metadata.py --tag v0.1.0-alpha
+bash scripts/local-nix.sh --command git tag -a v0.1.0-alpha -m 'Mish initial alpha qualification candidate'
+bash scripts/local-nix.sh --command git push origin v0.1.0-alpha
+```
+
+The **Draft release** workflow repeats all-system evaluation, native Linux
+checks, x86 VM behavior and image builds from the tagged revision. Its final
+gate verifies downloaded checksums, architecture, source and lockfile. It
+attaches the x86 VM closure/installer, Pi 4 SD image, validation manifests,
+source revision, lockfile, operating docs, changelog and curated release notes.
+Each architecture's checksum list uses the attached asset names; the aggregate
+`SHA256SUMS` additionally covers the standalone documentation and lists.
+
+The result is a draft prerelease and is not marked latest. A partial upload
+can be resumed by rerunning the draft job only for the same tag and revision;
+the helper refuses published releases or a different draft identity. Draft
+creation and upload have a repository-scoped write token only after validation.
+
+Download the assets together and run `sha256sum --check SHA256SUMS` before
+using media. Retain the tagged source and validation run URL with the physical
+acceptance record. GitHub validation establishes software behavior and realized
+images; it does not establish hardware or RF readiness.
+
+Publication remains a separate operator action after the required physical
+acceptance evidence is recorded. Release immutability makes publication the
+point after which image assets and the release tag cannot be replaced. See
+[GitHub's release guidance](https://docs.github.com/en/repositories/releasing-projects-on-github/managing-releases-in-a-repository).
