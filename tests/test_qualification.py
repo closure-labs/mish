@@ -73,7 +73,8 @@ class QualificationTests(unittest.TestCase):
                      for path in artifact.iterdir() if path.name != 'SHA256SUMS']
             (artifact / 'SHA256SUMS').write_text('\n'.join(lines) + '\n')
 
-        for fault in ['none', 'corrupt', 'revision', 'validation-revision', 'architecture', 'missing', 'incomplete']:
+        for fault in ['none', 'corrupt', 'revision', 'validation-revision', 'architecture',
+                      'missing', 'incomplete', 'cargo', 'payload', 'empty', 'target']:
             with self.subTest(fault=fault), tempfile.TemporaryDirectory() as directory:
                 root = Path(directory)
                 for system in ['x86_64-linux', 'aarch64-linux']:
@@ -82,7 +83,15 @@ class QualificationTests(unittest.TestCase):
                     (artifact / 'source-revision.txt').write_text('revision\n')
                     (artifact / 'validation-source-revision.txt').write_text('revision\n')
                     (artifact / 'flake.lock').write_bytes(b'locked')
+                    (artifact / 'Cargo.lock').write_bytes(b'cargo')
                     (artifact / 'image.bin').write_bytes(b'image')
+                    targets = (['mish-mini-pc-image', 'mish-mini-pc-installer']
+                               if system == 'x86_64-linux' else ['mish-rpi4-image'])
+                    (artifact / 'build-manifest.txt').write_text('\n'.join(
+                        f'{target} /nix/store/fixture-{target}' for target in targets))
+                    for name in (['installer.iso', f'mish-mini-pc-image-{system}.nar.gz']
+                                 if system == 'x86_64-linux' else ['sd.img.zst']):
+                        (artifact / name).write_bytes(b'image')
                     (artifact / 'validation-manifest.json').write_text(json.dumps({
                         'system': system, 'lockHash': hashlib.sha256(b'locked').hexdigest()}))
                     write_checksums(artifact)
@@ -104,8 +113,20 @@ class QualificationTests(unittest.TestCase):
                     shutil.rmtree(artifact)
                 elif fault == 'incomplete':
                     (artifact / 'unchecked.bin').write_bytes(b'extra')
+                elif fault == 'cargo':
+                    (artifact / 'Cargo.lock').write_bytes(b'wrong')
+                    write_checksums(artifact)
+                elif fault == 'payload':
+                    (artifact / 'installer.iso').unlink()
+                    write_checksums(artifact)
+                elif fault == 'empty':
+                    (artifact / 'installer.iso').write_bytes(b'')
+                    write_checksums(artifact)
+                elif fault == 'target':
+                    (artifact / 'build-manifest.txt').write_text('wrong /nix/store/wrong')
+                    write_checksums(artifact)
                 if fault == 'none':
-                    qualification.verify_artifacts(root, 'revision', b'locked')
+                    qualification.verify_artifacts(root, 'revision', b'locked', b'cargo')
                 else:
                     with self.assertRaises(ValueError):
-                        qualification.verify_artifacts(root, 'revision', b'locked')
+                        qualification.verify_artifacts(root, 'revision', b'locked', b'cargo')
