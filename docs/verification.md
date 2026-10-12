@@ -243,8 +243,9 @@ gate verified checksums, expected payloads/targets, both lockfiles and source
 identity before uploading.
 
 Post-upload API verification confirmed a draft prerelease for that source and
-40 complete assets totaling 2,953,428,530 bytes. Each GitHub-reported SHA-256
-digest matches the downloadable aggregate `SHA256SUMS`, including the checksum
-file's own separately computed digest. This verification downloaded only small
+40 complete assets totaling 2,953,428,530 bytes. The 39 manifest-covered
+GitHub-reported SHA-256 digests match the downloadable aggregate `SHA256SUMS`.
+The checksum file's own digest was computed separately and matched GitHub's API.
+This verification downloaded only small
 metadata and the checksum list to the workstation. It did not download or
 physically boot the images. Physical M2–M5 acceptance and publication remain open.

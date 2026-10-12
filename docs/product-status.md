@@ -51,8 +51,9 @@ product acceptance work below requires hardware and field evidence.
 [tagged release workflow](https://github.com/closure-labs/mish/actions/runs/38193676481)
 passed native x86/ARM checks, the x86 VM gate and VM/installer/SD image builds.
 The [draft prerelease](https://github.com/closure-labs/mish/releases/tag/untagged-6a68b87966db266145a7)
-contains 40 assets; their uploaded SHA-256 digests match the aggregate checksum
-manifest. Source, tag and draft identity were checked separately after upload.
+contains 40 assets. The 39 manifest-covered uploaded digests match `SHA256SUMS`;
+the checksum file's own digest was computed separately and matched GitHub's API.
+Source, tag and draft identity were checked separately after upload.
 
 See the [changelog](../CHANGELOG.md) and [alpha notes](releases/v0.1.0-alpha.md)
 for capabilities, prototype interface changes and limitations. Draft preparation

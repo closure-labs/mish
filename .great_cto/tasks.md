@@ -225,8 +225,9 @@ Physical hardware and field-pilot acceptance remain open.
 - [x] Annotated `v0.1.0-alpha` tag points to that exact revision. Tagged
   [Draft release run 38193676481](https://github.com/closure-labs/mish/actions/runs/38193676481)
   passed native checks, x86 VM and both image builds, then created a draft
-  prerelease. Verified all 40 uploaded asset digests against its aggregate
-  checksum list and confirmed draft/prerelease/source identity through the API.
+  prerelease. Verified 39 manifest-covered asset digests and separately checked
+  the checksum file's own digest against GitHub's API. Confirmed all 40 assets
+  and draft/prerelease/source identity after upload.
 
 The draft must retain its exact source and validation run. Physical M2–M5
 acceptance remains open before any later publication decision.
