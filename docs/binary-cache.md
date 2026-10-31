@@ -42,6 +42,8 @@ selection before upload. Every native check, including the x86 VM checks,
 continues to be required by the existing workflows.
 
 Before pushing, Nix reads the selected roots' recursive **local** closure.
+`--offline --store auto` uses the runner's local Nix store or local daemon,
+so metadata queries work with both single-user and multi-user installations.
 The policy validates canonical top-level store paths, complete reference edges,
 unique metadata, and positive integer NAR sizes. It deduplicates shared
 references and bounds the entire closure at 256 paths and 1 GiB of uncompressed

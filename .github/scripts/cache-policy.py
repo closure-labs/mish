@@ -14,6 +14,19 @@ MAX_NAR_BYTES = 1024 ** 3
 STORE_PATH = re.compile(r'/nix/store/[0-9abcdfghijklmnpqrsvwxyz]{32}-[A-Za-z0-9+._?=-]+')
 
 
+def unique_object(pairs):
+    result = {}
+    for key, value in pairs:
+        if key in result:
+            raise ValueError(f'duplicate JSON metadata key: {key}')
+        result[key] = value
+    return result
+
+
+def load_json(text):
+    return json.loads(text, object_pairs_hook=unique_object)
+
+
 def store_path(value):
     if (not isinstance(value, str) or not STORE_PATH.fullmatch(value)
             or value.endswith('.drv') or os.path.realpath(value) != value):
@@ -22,8 +35,9 @@ def store_path(value):
 
 
 def select_roots(manifest):
-    if manifest.get('version') != 1 or manifest.get('system') not in {
-            'x86_64-linux', 'aarch64-linux'}:
+    if (type(manifest.get('version')) is not int or manifest.get('version') != 1
+            or manifest.get('system') not in {
+            'x86_64-linux', 'aarch64-linux'}):
         raise ValueError('unknown validation manifest version/system')
     outputs = manifest['outputs']
     names = [entry['name'] for entry in outputs]
@@ -70,13 +84,15 @@ def closure_summary(metadata, roots):
 
 def main():
     artifact = Path('artifacts/cache-policy.json')
-    roots = select_roots(json.loads(Path('artifacts/validation-manifest.json').read_text()))
+    roots = select_roots(load_json(Path('artifacts/validation-manifest.json').read_text()))
     # Query only the local store: no upstream availability probes or unsafe
-    # subtraction of dependencies from a closure. Metadata failures stop upload.
-    result = subprocess.run(['nix', 'path-info', '--offline', '--store', 'local',
+    # subtraction of dependencies from a closure. Auto selects the local daemon
+    # on multi-user CI; forcing direct SQLite access would require DB ownership.
+    # Metadata failures stop upload.
+    result = subprocess.run(['nix', 'path-info', '--offline', '--store', 'auto',
                              '--json', '--recursive', '--', *roots],
                             check=True, capture_output=True, text=True)
-    summary = closure_summary(json.loads(result.stdout), roots)
+    summary = closure_summary(load_json(result.stdout), roots)
     report = dict(summary, roots=roots, maxPaths=MAX_PATHS,
                   maxNarBytes=MAX_NAR_BYTES, status='read-only')
     bounded = summary['paths'] <= MAX_PATHS and summary['narBytes'] <= MAX_NAR_BYTES

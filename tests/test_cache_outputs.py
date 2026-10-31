@@ -51,6 +51,7 @@ class CacheOutputsTests(unittest.TestCase):
                    ' print("/nix/store/test-mish\\n/nix/store/test-proof")\n'
                    'elif sys.argv[1] == "path-info":\n'
                    ' if "--json" in sys.argv:\n'
+                   '  assert sys.argv[2:7] == ["--offline", "--store", "auto", "--json", "--recursive"]\n'
                    '  if os.environ.get("TEST_QUERY_FAIL") == "true": sys.exit(23)\n'
                    '  print(os.environ["TEST_METADATA"])\n'
                    ' else: print(os.environ["TEST_PROOF"])\n'
@@ -123,7 +124,7 @@ class CacheOutputsTests(unittest.TestCase):
     def test_metadata_is_local_offline_and_never_subtracts_upstream_dependencies(self):
         # Upstream outages cannot change selection: no remote query is issued.
         source = POLICY.read_text()
-        self.assertIn("'--offline', '--store', 'local'", source)
+        self.assertIn("'--offline', '--store', 'auto'", source)
         root, result = self.run_cache(upload=True)
         self.assertEqual(result.returncode, 0, result.stderr)
         report = json.loads((root / 'artifacts/cache-policy.json').read_text())
@@ -150,6 +151,12 @@ class CacheOutputsTests(unittest.TestCase):
         with patch.object(policy.os.path, 'realpath', return_value=ROOTS[1]):
             with self.assertRaises(ValueError):
                 policy.store_path(ROOTS[0])
+
+    def test_duplicate_json_keys_fail_closed(self):
+        with self.assertRaises(ValueError):
+            policy.load_json('{"narSize": 1, "narSize": 999999}')
+        with self.assertRaises(ValueError):
+            policy.select_roots(dict(MANIFEST, version=True))
 
     def test_count_budget_checks_full_closure(self):
         metadata = [dict(info) for info in METADATA]
