@@ -345,7 +345,7 @@ lib.genAttrs linuxSystems (
             export MISH_CATALOG_PATH=${../catalog/mish-catalog.json}
             export MISH_QUEUE_SCRIPT_PATH=${../.github/scripts/queue_prs.py}
             export MISH_CI_ROOT=${../.}
-            export MISH_CACHE_SCRIPT_PATH=${../.github/scripts/cache-outputs.sh}
+            export MISH_CACHE_SCRIPT_PATH=${../.github/scripts}/cache-outputs.sh
             python3 -m unittest discover -s ${../tests} -p 'test_*.py'
             touch "$out"
           '';
@@ -447,7 +447,7 @@ lib.genAttrs linuxSystems (
             export MISH_CATALOG_PATH=${../catalog/mish-catalog.json}
             export MISH_QUEUE_SCRIPT_PATH=${../.github/scripts/queue_prs.py}
             export MISH_CI_ROOT=${../.}
-            export MISH_CACHE_SCRIPT_PATH=${../.github/scripts/cache-outputs.sh}
+            export MISH_CACHE_SCRIPT_PATH=${../.github/scripts}/cache-outputs.sh
             python3 -m unittest discover -s ${../tests} -p 'test_*.py'
             touch "$out"
           '';
