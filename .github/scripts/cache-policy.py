@@ -9,8 +9,8 @@ import subprocess
 # Positive selection: never upload the aggregate's links to VM/check images,
 # developer tools, or a newly added check without deliberate policy review.
 SELECTED = frozenset({'mish-control', 'schema', 'cli', 'channel-selection'})
-MAX_PATHS = 256
-MAX_NAR_BYTES = 1024 ** 3
+MAX_PATHS = 64
+MAX_NAR_BYTES = 256 * 1024 ** 2
 STORE_PATH = re.compile(r'/nix/store/[0-9abcdfghijklmnpqrsvwxyz]{32}-[A-Za-z0-9+._?=-]+')
 
 

@@ -46,8 +46,14 @@ Before pushing, Nix reads the selected roots' recursive **local** closure.
 so metadata queries work with both single-user and multi-user installations.
 The policy validates canonical top-level store paths, complete reference edges,
 unique metadata, and positive integer NAR sizes. It deduplicates shared
-references and bounds the entire closure at 256 paths and 1 GiB of uncompressed
-NAR bytes per invocation. This is a runtime-output budget; it does not limit
+references and bounds the entire closure at 64 paths and 256 MiB of uncompressed
+NAR bytes per invocation. The [initial PR measurement run](https://github.com/closure-labs/mish/actions/runs/41230191602)
+recorded 13 paths / 65,413,488 NAR bytes on x86 and 13 paths / 78,770,160
+NAR bytes on ARM for these roots. The budget leaves over 3x byte headroom and
+nearly 5x path headroom above the larger measured closure, while excluding
+whole-image uploads by positive selection. These are local closure sizes,
+not actual transfer or incremental cache storage bytes.
+This is a runtime-output budget; it does not limit
 Rust compilation's temporary build inputs or the VM/image builds. Over-budget
 closures skip the entire push and record `over-budget`, while complete image
 and validation evidence is still checksummed and archived. Missing, ambiguous,
