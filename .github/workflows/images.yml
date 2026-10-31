@@ -62,7 +62,7 @@ jobs:
           SYSTEM: ${{ matrix.system }}
           TARGETS: ${{ matrix.targets }}
         run: nix develop --accept-flake-config --command bash .github/scripts/build-images.sh
-      - name: Cache image closures, developer shell, and validation evidence
+      - name: Record complete evidence and cache bounded native outputs
         env:
           SYSTEM: ${{ matrix.system }}
           MISH_CACHE_UPLOAD: ${{ github.ref == 'refs/heads/main' && (github.event_name == 'push' || github.event_name == 'schedule' || github.event_name == 'workflow_dispatch') }}

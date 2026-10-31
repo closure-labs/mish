@@ -1,8 +1,8 @@
 # Build once, reuse the exact result
 
 Mish uses the public [mish Cachix cache](https://mish.cachix.org) for its Rust
-package, dependencies, native check outputs, VM results, image closures and
-pinned developer shell. Nix still evaluates each revision and requests its exact
+package and selected native check outputs with their complete runtime
+dependency closures. Nix still evaluates each revision and requests its exact
 derivations. A successful check output can be substituted when its build
 inputs match; changes to the application, test, toolchain or relevant inputs
 require the corresponding new result. Cache reuse does not establish physical
@@ -29,12 +29,44 @@ queue and draft-release jobs also stay read-only for Cachix.
 There is no pull_request_target workflow or upload of artifacts from a PR into
 a privileged follow-up job.
 
-Cachix's daemon pushes newly built intermediate outputs. After successful
-validation, .github/scripts/cache-outputs.sh explicitly pushes Mish, the native
-validation aggregate, the developer shell and any image roots. This also seeds
-outputs restored from GitHub's cache, because Nix post-build hooks do not run for
-substituted paths. No application state, credentials, operator backups or staff
-data are build inputs or cache artifacts.
+The pinned Cachix action always uses `skipPush: true`: it configures existing
+CLI authentication but starts neither a post-build daemon nor a store-scan
+upload. Setting only `useDaemon: false` would enable its store-scan fallback.
+After successful validation, `.github/scripts/cache-outputs.sh` invokes the
+explicit policy in `cache-policy.py`. It selects only `mish-control`, `schema`,
+`cli`, and `channel-selection` from the validation manifest. These retain the
+compiled Rust package and useful check results. Whole images, image
+intermediates, VM results, the validation aggregate (which links all checks),
+and the developer shell are excluded as roots. New checks require deliberate
+selection before upload. Every native check, including the x86 VM checks,
+continues to be required by the existing workflows.
+
+Before pushing, Nix reads the selected roots' recursive **local** closure.
+The policy validates canonical top-level store paths, complete reference edges,
+unique metadata, and positive integer NAR sizes. It deduplicates shared
+references and bounds the entire closure at 256 paths and 1 GiB of uncompressed
+NAR bytes per invocation. This is a runtime-output budget; it does not limit
+Rust compilation's temporary build inputs or the VM/image builds. Over-budget
+closures skip the entire push and record `over-budget`, while complete image
+and validation evidence is still checksummed and archived. Missing, ambiguous,
+or failed metadata fails the step before upload. Push failures also fail.
+`artifacts/cache-policy.json` records roots, deduplicated count, NAR bytes,
+budgets and decision, including on read-only PRs.
+
+No upstream-availability filter is used: Cachix receives complete closures,
+including dependencies that might also exist upstream. This avoids treating an
+upstream timeout or an unsigned availability claim as permission to omit a
+required reference. Existing signed Nix substitution remains unchanged.
+There are no live cache inventory requests in the policy.
+
+The [October 26 Images run](https://github.com/closure-labs/mish/actions/runs/40329760189)
+logged successful pushes of an ISO, an SD image, an intermediate filesystem
+image and `inputDerivation-nix-shell`. Those logs establish the old upload
+scope, not unique uploaded bytes or account storage growth. The new per-run
+NAR measurement is not compressed transfer size or newly consumed storage.
+This policy bounds future selected closures; it does not delete historical
+entries, bound cumulative cache growth, or claim measured storage savings.
+Mish uses `mish.cachix.org`, separately from FINite's cache.
 
 GitHub's supplementary store cache separates architectures and includes both
 lockfiles, the source revision and workflow in its immutable key. Restore
@@ -77,8 +109,10 @@ workstation use the bounded command in [Contributing](contributing.md) for
 targeted checks, and let GitHub CI produce the full validation aggregate.
 Do not run this aggregate concurrently with other local evaluations/builds.
 
-An authorized operator can set MISH_CACHE_UPLOAD=true for this command after
-configuring Cachix authentication locally. Upload failures fail the step.
+The workflow sets `MISH_CACHE_AUTHENTICATED=true` only when its existing trusted
+job receives a token. An authorized local operator must explicitly set both
+`MISH_CACHE_UPLOAD=true` and `MISH_CACHE_AUTHENTICATED=true` after configuring
+Cachix authentication. Neither flag by itself enables an upload. Upload failures fail the step.
 Running this against the same committed inputs on a matching architecture
 produces the same check outputs used by GitHub Actions. Direct Cargo tests
 outside Nix derivations do not produce these reusable validation outputs.
@@ -94,8 +128,8 @@ the daemon explicitly. No host trust settings are changed by this repository.
 
 Devenv offers [Cachix integration](https://devenv.sh/binary-caching/), but sharing
 validation results comes from building and uploading the same Nix checks.
-The current shell already shares the package's build inputs and is cached by
-the same mechanism. A devenv command interface could call these same checks
+The current shell shares the package's build inputs; its full closure is not
+selected for Cachix upload. A devenv command interface could call these same checks
 later without creating a second validation definition.
 
 References: [Cachix action and push modes](https://github.com/cachix/cachix-action),

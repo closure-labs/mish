@@ -34,6 +34,12 @@ runs:
       with:
         name: mish
         authToken: ${{ inputs.token }}
-        skipPush: ${{ inputs.token == '' }}
+        # Never start the daemon or its store-scan fallback.
+        skipPush: true
         skipAddingSubstituter: true
         cachixBin: ${{ steps.cachix.outputs.path }}
+    - name: Record explicit upload authentication
+      shell: bash
+      env:
+        CACHE_AUTHENTICATED: ${{ inputs.token != '' }}
+      run: printf 'MISH_CACHE_AUTHENTICATED=%s\n' "$CACHE_AUTHENTICATED" >> "$GITHUB_ENV"
