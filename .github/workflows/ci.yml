@@ -101,6 +101,7 @@ jobs:
           path: |
             evaluation.log
             native-checks.log
+            artifacts/cache-policy.json
             artifacts/validation-*
             artifacts/SHA256SUMS
           if-no-files-found: ignore
